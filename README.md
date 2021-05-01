@@ -1,0 +1,2 @@
+# infobot
+Signals from Tradingview
