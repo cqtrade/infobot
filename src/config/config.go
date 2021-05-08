@@ -6,6 +6,7 @@ type Config interface {
 	GetDiscordEnabled() bool
 	GetDiscordChBtcVibe() string
 	GetDiscordChRandomIdeas() string
+	GetDiscordChAltSignals() string
 	GetDiscordChByChName(string) string
 	GetServerUrl() string
 }
@@ -14,6 +15,7 @@ type conf struct {
 	discordEnabled       bool
 	discordChBtcVibe     string
 	discordChRandomIdeas string
+	discordChAltSignals  string
 	serverUrl            string
 }
 
@@ -25,6 +27,7 @@ func New() Config {
 		discordEnabled:       viper.GetBool("DISCORD_ENABLED"),
 		discordChBtcVibe:     viper.GetString("DISCORD_CH_BTC_VIBE"),
 		discordChRandomIdeas: viper.GetString("DISCORD_CH_RANDOM_IDEAS"),
+		discordChAltSignals:  viper.GetString("DISCORD_CH_ALTSIGNALS"),
 		serverUrl:            viper.GetString("SERVER_URL"),
 	}
 }
@@ -39,6 +42,10 @@ func (c *conf) GetDiscordChBtcVibe() string {
 
 func (c *conf) GetDiscordChRandomIdeas() string {
 	return c.discordChRandomIdeas
+}
+
+func (c *conf) GetDiscordChAltSignals() string {
+	return c.discordChAltSignals
 }
 
 func (c *conf) GetDiscordChByChName(name string) string {

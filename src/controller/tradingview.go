@@ -2,6 +2,7 @@ package controller
 
 import (
 	"github.com/cqtrade/infobot/src/service"
+	"github.com/cqtrade/infobot/src/types"
 	"github.com/gin-gonic/gin"
 )
 
@@ -27,16 +28,21 @@ func (tvc *tvController) PostText(ctx *gin.Context) {
 		println("error " + err.Error()) // TODO needs logger
 		return
 	}
-	tvc.discordService.SendTextMessage(string(text))
-}
 
-type Signal struct {
-	Ticker   string `json:"ticker"`
-	Exchange string `json:"exchange"`
-	Signal   string `json:"signal"`
-	Type     string `json:"type"`
+	go func(msg string, t *tvController) {
+		tvc.discordService.SendTextMessage(msg)
+	}(string(text), tvc)
 }
 
 func (tvc *tvController) PostJson(ctx *gin.Context) {
-	ctx.JSON(200, gin.H{"post": "json"})
+	ctx.JSON(200, gin.H{})
+	var message types.JSONMessageBody
+	err := ctx.ShouldBindJSON(&message)
+	if err != nil {
+		println("error " + err.Error()) // TODO needs logger
+		return
+	}
+	go func(msg types.JSONMessageBody, t *tvController) {
+		t.discordService.SendJSONMessageToAltSignals(msg)
+	}(message, tvc)
 }
