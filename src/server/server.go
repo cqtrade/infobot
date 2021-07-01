@@ -46,6 +46,7 @@ func (s *serv) Run() {
 
 		apiRoutes.POST("/signal-text", s.tvCtrl.PostText)
 		apiRoutes.POST("/signal-json", s.tvCtrl.PostJson)
+		apiRoutes.POST("/flash", s.tvCtrl.PostFlash)
 	}
 
 	s.server.Run(s.cfg.GetServerUrl())

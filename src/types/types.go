@@ -1,9 +1,25 @@
 package types
 
+/*
+{
+	"signal":{{plot("Signal")}},
+	"ticker":"{{ticker}}",
+	"atrtp":{{plot("AtrTp")}},
+	"atrsl":{{plot("AtrSl")}},
+	"risk":{{plot("Risk")}}",
+	"exchange":"{{exchange}}"
+}
+*/
 type JSONMessageBody struct {
-	Ticker   string  `json:"ticker"`
-	Exchange string  `json:"exchange"`
-	Signal   float64 `json:"signal"`
-	Ch24h    float64 `json:"change_24h"`
-	Ch7      float64 `json:"change_7d"`
+	Signal   float64 `json:"signal,omitempty"`
+	Ticker   string  `json:"ticker,omitempty"`
+	AtrTP    float64 `json:"atrtp,omitempty"`
+	AtrSL    float64 `json:"atrsl,omitempty"`
+	Risk     float64 `json:"risk,omitempty"`
+	Exchange string  `json:"exchange,omitempty"`
+	Text     string  `json:"text,omitempty"`
+}
+
+type NotificationBody struct {
+	Content string `json:"content"`
 }

@@ -9,6 +9,7 @@ import (
 type TradingviewController interface {
 	PostText(ctx *gin.Context)
 	PostJson(ctx *gin.Context)
+	PostFlash(ctx *gin.Context)
 }
 
 type tvController struct {
@@ -42,7 +43,18 @@ func (tvc *tvController) PostJson(ctx *gin.Context) {
 		println("error " + err.Error()) // TODO needs logger
 		return
 	}
-	go func(msg types.JSONMessageBody, t *tvController) {
-		t.discordService.SendJSONMessageToAltSignals(msg)
-	}(message, tvc)
+
+	tvc.discordService.SendJSONMessageToAltSignals(message)
+}
+
+func (tvc *tvController) PostFlash(ctx *gin.Context) {
+	ctx.JSON(200, gin.H{})
+	var message types.JSONMessageBody
+	err := ctx.ShouldBindJSON(&message)
+	if err != nil {
+		println("error " + err.Error()) // TODO needs logger
+		return
+	}
+
+	tvc.discordService.SendFlashMessage(message)
 }
