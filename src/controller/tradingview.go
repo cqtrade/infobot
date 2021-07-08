@@ -1,28 +1,25 @@
-package controller
+package tvcontroller
 
 import (
-	"github.com/cqtrade/infobot/src/service"
+	"github.com/cqtrade/infobot/src/ftxtrade"
+	"github.com/cqtrade/infobot/src/notification"
 	"github.com/cqtrade/infobot/src/types"
 	"github.com/gin-gonic/gin"
 )
 
-type TradingviewController interface {
-	PostText(ctx *gin.Context)
-	PostJson(ctx *gin.Context)
-	PostFlash(ctx *gin.Context)
+type TvController struct {
+	notification notification.Notification
+	ftxTrade     ftxtrade.FtxTrade
 }
 
-type tvController struct {
-	discordService service.DiscordService
-}
-
-func NewTradingviewController(discordService service.DiscordService) TradingviewController {
-	return &tvController{
-		discordService: discordService,
+func New(notification notification.Notification, ftxTrade ftxtrade.FtxTrade) *TvController {
+	return &TvController{
+		notification: notification,
+		ftxTrade:     ftxTrade,
 	}
 }
 
-func (tvc *tvController) PostText(ctx *gin.Context) {
+func (tvc *TvController) PostText(ctx *gin.Context) {
 	ctx.JSON(200, gin.H{})
 	text, err := ctx.GetRawData()
 	if err != nil {
@@ -30,12 +27,12 @@ func (tvc *tvController) PostText(ctx *gin.Context) {
 		return
 	}
 
-	go func(msg string, t *tvController) {
-		tvc.discordService.SendTextMessage(msg)
+	go func(msg string, t *TvController) {
+		tvc.notification.SendTextMessage(msg)
 	}(string(text), tvc)
 }
 
-func (tvc *tvController) PostJson(ctx *gin.Context) {
+func (tvc *TvController) PostJson(ctx *gin.Context) {
 	ctx.JSON(200, gin.H{})
 	var message types.JSONMessageBody
 	err := ctx.ShouldBindJSON(&message)
@@ -44,10 +41,10 @@ func (tvc *tvController) PostJson(ctx *gin.Context) {
 		return
 	}
 
-	tvc.discordService.SendJSONMessageToAltSignals(message)
+	tvc.notification.SendJSONMessageToAltSignals(message)
 }
 
-func (tvc *tvController) PostFlash(ctx *gin.Context) {
+func (tvc *TvController) PostFlash(ctx *gin.Context) {
 	ctx.JSON(200, gin.H{})
 	var message types.JSONMessageBody
 	err := ctx.ShouldBindJSON(&message)
@@ -55,6 +52,8 @@ func (tvc *tvController) PostFlash(ctx *gin.Context) {
 		println("error " + err.Error()) // TODO needs logger
 		return
 	}
-
-	tvc.discordService.SendFlashMessage(message)
+	if message.Signal == 1001 {
+		go tvc.ftxTrade.BuyEthBull("test1")
+	}
+	go tvc.notification.SendFlashMessage(message)
 }

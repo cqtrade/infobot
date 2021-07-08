@@ -2,30 +2,20 @@ package app
 
 import (
 	"github.com/cqtrade/infobot/src/config"
-	"github.com/cqtrade/infobot/src/controller"
+	tvcontroller "github.com/cqtrade/infobot/src/controller"
 	"github.com/cqtrade/infobot/src/ftxtrade"
+	"github.com/cqtrade/infobot/src/notification"
 	"github.com/cqtrade/infobot/src/server"
-	"github.com/cqtrade/infobot/src/service"
 )
 
 var (
-	cfg                   config.Config                    = config.New()
-	discordService        service.DiscordService           = service.NewDiscordService(cfg)
-	tradingviewController controller.TradingviewController = controller.NewTradingviewController(discordService)
-	webServer             server.Server                    = server.New(cfg, tradingviewController)
+	cfg          config.Config             = *config.New()
+	ft           ftxtrade.FtxTrade         = *ftxtrade.New(cfg)
+	notif        notification.Notification = *notification.New(cfg)
+	tvController tvcontroller.TvController = *tvcontroller.New(notif, ft)
+	webServer    server.Server             = *server.New(cfg, tvController)
 )
 
-/*
-TODO
-HEALTH Logger to Discord
-
-https://github.com/go-numb/go-ftx
-https://github.com/grishinsana/goftx
-https://github.com/cloudingcity/go-ftx
-*/
-
 func Run() {
-	ftxtrade.StartStuff()
-
-	// webServer.Run()
+	webServer.Run()
 }

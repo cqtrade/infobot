@@ -18,6 +18,7 @@ type JSONMessageBody struct {
 	Risk     float64 `json:"risk,omitempty"`
 	Exchange string  `json:"exchange,omitempty"`
 	Text     string  `json:"text,omitempty"`
+	Sub      string  `json:"sub,omitempty"`
 }
 
 type NotificationBody struct {

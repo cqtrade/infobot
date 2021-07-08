@@ -2,30 +2,26 @@ package server
 
 import (
 	"github.com/cqtrade/infobot/src/config"
-	"github.com/cqtrade/infobot/src/controller"
+	tvcontroller "github.com/cqtrade/infobot/src/controller"
 	"github.com/gin-gonic/gin"
 )
 
-type Server interface {
-	Run()
-}
-
-type serv struct {
+type Server struct {
 	cfg    config.Config
 	server *gin.Engine
-	tvCtrl controller.TradingviewController
+	tvCtrl tvcontroller.TvController
 }
 
-func New(cfg config.Config, tvCtrl controller.TradingviewController) Server {
+func New(cfg config.Config, tvCtrl tvcontroller.TvController) *Server {
 	server := gin.New()
-	return &serv{
+	return &Server{
 		cfg:    cfg,
 		server: server,
 		tvCtrl: tvCtrl,
 	}
 }
 
-func (s *serv) Run() {
+func (s *Server) Run() {
 	s.server.Use(gin.Recovery(), gin.Logger())
 
 	s.server.GET("/", func(c *gin.Context) {

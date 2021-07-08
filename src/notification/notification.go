@@ -1,4 +1,4 @@
-package service
+package notification
 
 import (
 	"bytes"
@@ -11,21 +11,14 @@ import (
 	"github.com/cqtrade/infobot/src/types"
 )
 
-type DiscordService interface {
-	SendTextMessage(msg string)
-	sendNotification(ch string, message string)
-	SendJSONMessageToAltSignals(msgJSON types.JSONMessageBody)
-	SendFlashMessage(msgJSON types.JSONMessageBody)
-}
-
-type discordService struct {
+type Notification struct {
 	cfg        config.Config
 	httpClient *http.Client
 }
 
-func NewDiscordService(cfg config.Config) DiscordService {
+func New(cfg config.Config) *Notification {
 	httpClient := &http.Client{Timeout: 10 * time.Second}
-	return &discordService{
+	return &Notification{
 		cfg:        cfg,
 		httpClient: httpClient,
 	}
@@ -64,7 +57,7 @@ func reqToDiscord(webhookUrl string, msg string, client *http.Client) { // maybe
 	}
 }
 
-func (ds *discordService) sendNotification(ch string, message string) {
+func (ds *Notification) sendNotification(ch string, message string) {
 	if !ds.cfg.GetDiscordEnabled() {
 		return
 	}
@@ -72,7 +65,7 @@ func (ds *discordService) sendNotification(ch string, message string) {
 	go reqToDiscord(ch, message, ds.httpClient)
 }
 
-func (ds *discordService) SendTextMessage(msg string) {
+func (ds *Notification) SendTextMessage(msg string) {
 	ch := ds.cfg.GetDiscordChByChName("random-ideas")
 	if ch != "" {
 		ds.sendNotification(ch, msg)
@@ -92,7 +85,7 @@ func (ds *discordService) SendTextMessage(msg string) {
 -21 breakdown HTF
 */
 
-func (ds *discordService) SendJSONMessageToAltSignals(msgJSON types.JSONMessageBody) {
+func (ds *Notification) SendJSONMessageToAltSignals(msgJSON types.JSONMessageBody) {
 	m := "**" + msgJSON.Ticker + "**"
 
 	switch s := msgJSON.Signal; s {
@@ -129,7 +122,7 @@ func (ds *discordService) SendJSONMessageToAltSignals(msgJSON types.JSONMessageB
 /**
 flash signal gets signals from tested strategies
 */
-func (ds *discordService) SendFlashMessage(msgJSON types.JSONMessageBody) {
+func (ds *Notification) SendFlashMessage(msgJSON types.JSONMessageBody) {
 	// TODO format message
 	m := "**" + msgJSON.Ticker + "**"
 
