@@ -62,6 +62,7 @@ func (ds *Notification) sendNotification(ch string, message string) {
 		return
 	}
 
+	message = time.Now().Format("Jan 02 15:04") + " " + message
 	go reqToDiscord(ch, message, ds.httpClient)
 }
 
@@ -89,22 +90,18 @@ func (ds *Notification) SendJSONMessageToAltSignals(msgJSON types.JSONMessageBod
 	m := "**" + msgJSON.Ticker + "**"
 
 	switch s := msgJSON.Signal; s {
+	case 1001:
+		m += " Flash BUY"
+	case -2002:
+		m += " take profit sell"
 	case 1:
-		m += " check **BUY** - oversold LTF"
+		m += " Long"
 	case 2:
-		m += " check **BUY** - breakout LTF"
-	case 11:
-		m += " check **BUY** - oversold **HTF**"
-	case 21:
-		m += " check **BUY** - breakout **HTF**"
+		m += " Exit Long"
 	case -1:
-		m += " check **SELL** - overbought LTF"
+		m += " Short"
 	case -2:
-		m += " check **SELL** - breakdown LTF"
-	case -11:
-		m += " check **SELL** - overbought **HTF**"
-	case -21:
-		m += " check **SELL** - breakdown **HTF**"
+		m += " Exit Short"
 
 	default:
 		m += " unknown signal: " + fmt.Sprintf("%g", s)
@@ -127,28 +124,22 @@ func (ds *Notification) SendFlashMessage(msgJSON types.JSONMessageBody) {
 	m := "**" + msgJSON.Ticker + "**"
 
 	switch s := msgJSON.Signal; s {
+	case 1001:
+		m += " Flash BUY"
+	case -2002:
+		m += " take profit sell"
 	case 1:
-		m += " check **BUY** - oversold LTF"
+		m += " Long"
 	case 2:
-		m += " check **BUY** - breakout LTF"
-	case 11:
-		m += " check **BUY** - oversold **HTF**"
-	case 21:
-		m += " check **BUY** - breakout **HTF**"
+		m += " Exit Long"
 	case -1:
-		m += " check **SELL** - overbought LTF"
+		m += " Short"
 	case -2:
-		m += " check **SELL** - breakdown LTF"
-	case -11:
-		m += " check **SELL** - overbought **HTF**"
-	case -21:
-		m += " check **SELL** - breakdown **HTF**"
+		m += " Exit Short"
 
 	default:
 		m += " unknown signal: " + fmt.Sprintf("%g", s)
 	}
-
-	m += " " + msgJSON.Exchange
 
 	ch := ds.cfg.GetDiscordChByChName("flash")
 	if ch != "" {
