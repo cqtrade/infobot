@@ -11,6 +11,8 @@ RUN go build -o /go/bin/app
 #final stage
 FROM alpine:latest
 RUN apk --no-cache add ca-certificates
+RUN apk add --no-cache tzdata
+ENV TZ Europe/Tallinn
 COPY --from=builder /go/bin/app /app
 
 ENTRYPOINT ./app
