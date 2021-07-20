@@ -1,6 +1,8 @@
 package config
 
-import "github.com/spf13/viper"
+import (
+	"github.com/spf13/viper"
+)
 
 type Config struct {
 	DiscordEnabled       bool
@@ -8,6 +10,7 @@ type Config struct {
 	DiscordChRandomIdeas string
 	DiscordChAltSignals  string
 	DiscordChFlash       string
+	DiscordChHealth      string
 	serverUrl            string
 	FTXKey               string
 	FTXSecret            string
@@ -25,6 +28,7 @@ func New() *Config {
 		DiscordChRandomIdeas: viper.GetString("DISCORD_CH_RANDOM_IDEAS"),
 		DiscordChAltSignals:  viper.GetString("DISCORD_CH_ALTSIGNALS"),
 		DiscordChFlash:       viper.GetString("DISCORD_CH_FLASH"),
+		DiscordChHealth:      viper.GetString("DISCORD_CH_HEALTH"),
 		serverUrl:            viper.GetString("SERVER_URL"),
 		FTXKey:               viper.GetString("FTX_KEY"),
 		FTXSecret:            viper.GetString("FTX_SECRET"),

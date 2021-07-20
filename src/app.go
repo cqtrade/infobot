@@ -10,12 +10,13 @@ import (
 
 var (
 	cfg          config.Config             = *config.New()
-	ft           ftxtrade.FtxTrade         = *ftxtrade.New(cfg)
 	notif        notification.Notification = *notification.New(cfg)
+	ft           ftxtrade.FtxTrade         = *ftxtrade.New(cfg)
 	tvController tvcontroller.TvController = *tvcontroller.New(notif, ft)
 	webServer    server.Server             = *server.New(cfg, tvController)
 )
 
 func Run() {
+	go ft.StartHealthPing()
 	webServer.Run()
 }

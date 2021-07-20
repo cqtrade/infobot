@@ -3,20 +3,28 @@
 package ftxtrade
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"math"
+	"net/http"
+	"time"
 
 	"github.com/cqtrade/infobot/src/config"
 	"github.com/cqtrade/infobot/src/ftx"
+	"github.com/cqtrade/infobot/src/types"
 )
 
 type FtxTrade struct {
-	cfg config.Config
+	cfg        config.Config
+	httpClient *http.Client
 }
 
 func New(cfg config.Config) *FtxTrade {
+	httpClient := &http.Client{Timeout: 10 * time.Second}
 	return &FtxTrade{
-		cfg: cfg,
+		cfg:        cfg,
+		httpClient: httpClient,
 	}
 }
 
@@ -92,4 +100,77 @@ func (ft *FtxTrade) GetLastPriceForMarket(market string, client *ftx.FtxClient) 
 	}
 
 	return marketPrice, nil
+}
+
+// https://yourbasic.org/golang/convert-string-to-float/
+func (ft *FtxTrade) GetOverview(subAcc string) string {
+	key := ft.cfg.FTXKey
+	secret := ft.cfg.FTXSecret
+	client := ftx.New(key, secret, subAcc)
+	sBalances, err := client.GetSubaccountBalances(subAcc)
+	msg := subAcc
+	if err != nil {
+		return msg + " error receiveing balnces: " + err.Error()
+	}
+	freeUSD := 0.0
+	totalETHBULL := 0.0
+	totalETHBULLUSD := 0.0
+	if sBalances.Success {
+		for _, balance := range sBalances.Result {
+			if balance.Coin == "USD" {
+				freeUSD = balance.Free
+			} else if balance.Coin == "ETHBULL" {
+				totalETHBULL = balance.Total
+			}
+		}
+		ethBullPrice, _ := ft.GetLastPriceForMarket("ETHBULL/USD", client)
+		fmt.Println(totalETHBULL, ethBullPrice)
+		totalETHBULLUSD = totalETHBULL * ethBullPrice
+		totalEquityUSD := freeUSD + totalETHBULLUSD
+		if totalEquityUSD == 0 {
+			totalEquityUSD = 0.001
+		}
+		// cashPercentage := math.Round(freeUSD * 100 / totalEquityUSD)
+		return " total: " + fmt.Sprintf("%.2f", totalEquityUSD) + " free USD: " + fmt.Sprintf("%.2f", freeUSD) +
+			" cash: " + fmt.Sprintf("%.2f%%", freeUSD*100/totalEquityUSD)
+	} else {
+		return "No success getting balances for " + subAcc
+	}
+
+}
+
+func (ft *FtxTrade) StartHealthPing() {
+	for t := range time.Tick(time.Second) {
+		if t.Second() == 33 {
+			reqBody := types.NotificationBody{Content: t.Format("Jan 02 15:04") + ft.GetOverview("test1")}
+
+			reqBodyBytes, err := json.Marshal(reqBody)
+			if err != nil {
+				println("ERROR json.Marshal(reqBody)" + err.Error())
+				return
+			}
+
+			req, err := http.NewRequest(http.MethodPost, ft.cfg.DiscordChHealth, bytes.NewBuffer(reqBodyBytes))
+
+			if err != nil {
+				println("ERROR preparing discord payload" + err.Error())
+				return
+			}
+
+			req.Header.Add("Content-Type", "application/json")
+
+			resp, err := ft.httpClient.Do(req)
+			defer ft.httpClient.CloseIdleConnections()
+
+			if err != nil {
+				println("ERROR logger http " + err.Error())
+				return
+			}
+
+			if resp.StatusCode < 200 || resp.StatusCode > 299 {
+				println("Discord resp.StatusCode: " + fmt.Sprintf("%d", resp.StatusCode))
+				return
+			}
+		}
+	}
 }

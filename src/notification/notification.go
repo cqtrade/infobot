@@ -62,7 +62,7 @@ func (ds *Notification) sendNotification(ch string, message string) {
 		return
 	}
 
-	message = time.Now().Format("Jan 02 15:04") + " " + message
+	message = time.Now().Format("Jan 02 15:04:01") + " " + message
 	go reqToDiscord(ch, message, ds.httpClient)
 }
 
