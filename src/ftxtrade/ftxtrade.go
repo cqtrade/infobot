@@ -124,13 +124,11 @@ func (ft *FtxTrade) GetOverview(subAcc string) string {
 			}
 		}
 		ethBullPrice, _ := ft.GetLastPriceForMarket("ETHBULL/USD", client)
-		fmt.Println(totalETHBULL, ethBullPrice)
 		totalETHBULLUSD = totalETHBULL * ethBullPrice
 		totalEquityUSD := freeUSD + totalETHBULLUSD
 		if totalEquityUSD == 0 {
 			totalEquityUSD = 0.001
 		}
-		// cashPercentage := math.Round(freeUSD * 100 / totalEquityUSD)
 		return " total: " + fmt.Sprintf("%.2f", totalEquityUSD) + " free USD: " + fmt.Sprintf("%.2f", freeUSD) +
 			" cash: " + fmt.Sprintf("%.2f%%", freeUSD*100/totalEquityUSD)
 	} else {
