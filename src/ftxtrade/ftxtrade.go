@@ -145,6 +145,7 @@ func (ft *FtxTrade) StartHealthPing() {
 			reqBodyBytes, err := json.Marshal(reqBody)
 			if err != nil {
 				println("ERROR json.Marshal(reqBody)" + err.Error())
+				ft.StartHealthPing()
 				return
 			}
 
@@ -152,6 +153,7 @@ func (ft *FtxTrade) StartHealthPing() {
 
 			if err != nil {
 				println("ERROR preparing discord payload" + err.Error())
+				ft.StartHealthPing()
 				return
 			}
 
@@ -162,11 +164,13 @@ func (ft *FtxTrade) StartHealthPing() {
 
 			if err != nil {
 				println("ERROR logger http " + err.Error())
+				ft.StartHealthPing()
 				return
 			}
 
 			if resp.StatusCode < 200 || resp.StatusCode > 299 {
 				println("Discord resp.StatusCode: " + fmt.Sprintf("%d", resp.StatusCode))
+				ft.StartHealthPing()
 				return
 			}
 		}
