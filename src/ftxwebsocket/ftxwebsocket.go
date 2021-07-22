@@ -24,6 +24,8 @@ func New(cfg config.Config, ft ftxtrade.FtxTrade, notif notification.Notificatio
 	}
 }
 
+// https://gobyexample.com/stateful-goroutines
+
 func (ftws *FtxWebSocket) Start() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -31,6 +33,19 @@ func (ftws *FtxWebSocket) Start() {
 	ch := make(chan realtime.Response)
 	go realtime.Connect(ctx, ch, []string{"ticker"}, []string{"BTC/USD", "BTC-1231"}, nil)
 	// go realtime.ConnectForPrivate(ctx, ch, "<key>", "<secret>", []string{"orders", "fills"}, nil)
+
+	// go func() {
+	// 	state := make(map[int]int)
+	// 	for {
+	// 		select {
+	// 		case read := <-reads:
+	// 			read.resp <- state[read.key]
+	// 		case write := <-writes:
+	// 			state[write.key] = write.val
+	// 			write.resp <- true
+	// 		}
+	// 	}
+	// }()
 
 	for {
 		select {

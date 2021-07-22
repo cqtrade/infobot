@@ -28,6 +28,33 @@ func New(cfg config.Config) *FtxTrade {
 	}
 }
 
+func (ft *FtxTrade) TpEthBull(subAcc string) {
+	fractionPerc := 0.2
+	// get ETHBULL balance
+	key := ft.cfg.FTXKey
+	secret := ft.cfg.FTXSecret
+	client := ftx.New(key, secret, subAcc)
+	balanceETHBULL, _ := ft.CheckFreeBalanceETHBULL("test1", client)
+	market := "ETHBULL/USD"
+	marketPrice, _ := ft.GetLastPriceForMarket(market, client)
+	// calculate value
+	valueUSD := balanceETHBULL * marketPrice
+	size := math.Round((balanceETHBULL*fractionPerc)*10000) / 10000
+	// calculate 10% or 20% of value
+	fractionUSD := valueUSD * fractionPerc
+	if fractionUSD > 4 {
+		_, err := client.PlaceMarketOrder(market, "sell", "market", size)
+		if err != nil {
+			fmt.Println("ERROR with Market BUY order ", err)
+		} else {
+			fmt.Println("TP SELL FLOW SUCCESS ")
+		}
+	} else {
+		fmt.Println("Fraction value ", fractionUSD)
+	}
+	// if it is > 10 sell market or add trailing stop
+}
+
 func (ft *FtxTrade) BuyEthBull(subAcc string) {
 	key := ft.cfg.FTXKey
 	secret := ft.cfg.FTXSecret
@@ -47,7 +74,7 @@ func (ft *FtxTrade) BuyEthBull(subAcc string) {
 		fmt.Println("Buy market\t", market, "\t", size)
 		orderMarket, err := client.PlaceMarketOrder(market, "buy", "market", size)
 		if err != nil {
-			fmt.Println("ERROR with Market order ", err)
+			fmt.Println("ERROR with Market BUY order ", err)
 		}
 		fmt.Println(orderMarket)
 		if orderMarket.Success == true {
@@ -60,7 +87,7 @@ func (ft *FtxTrade) BuyEthBull(subAcc string) {
 			if err != nil {
 				fmt.Println("ERROR with TP order ", err)
 			} else if orderTP.Success {
-				fmt.Println("FLOW SUCCESS")
+				fmt.Println("BUY FLOW SUCCESS")
 			}
 		} else {
 			fmt.Println("FAILED market order, ", orderMarket)
@@ -74,10 +101,29 @@ func (ft *FtxTrade) CheckBalanceUSD(subAcc string, client *ftx.FtxClient) (float
 	if err != nil {
 		return equity, err
 	}
-	fmt.Println(sBalances)
+
 	if sBalances.Success {
 		for _, balance := range sBalances.Result {
 			if balance.Coin == "USD" {
+				equity = balance.Free
+			}
+			fmt.Println("Coin\t", balance.Coin, "\tfree:\t", balance.Free, "\ttotal:\t", balance.Total)
+		}
+	}
+
+	return equity, nil
+}
+
+func (ft *FtxTrade) CheckFreeBalanceETHBULL(subAcc string, client *ftx.FtxClient) (float64, error) {
+	sBalances, err := client.GetSubaccountBalances(subAcc)
+	equity := 0.0
+	if err != nil {
+		return equity, err
+	}
+
+	if sBalances.Success {
+		for _, balance := range sBalances.Result {
+			if balance.Coin == "ETHBULL" {
 				equity = balance.Free
 			}
 			fmt.Println("Coin\t", balance.Coin, "\tfree:\t", balance.Free, "\ttotal:\t", balance.Total)

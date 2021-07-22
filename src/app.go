@@ -20,6 +20,6 @@ var (
 
 func Run() {
 	// ftws.Start()
-	ft.StartHealthPing()
-	// webServer.Run()
+	go ft.StartHealthPing()
+	webServer.Run()
 }
