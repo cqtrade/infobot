@@ -57,7 +57,9 @@ func (tvc *TvController) PostFlash(ctx *gin.Context) {
 	} else if message.Signal == -2002 {
 		go tvc.ftxTrade.TpEthBull("test1")
 	} else if message.Signal == 888 {
-		go tvc.ftxTrade.Arb("arb1", "BTC")
+		go tvc.ftxTrade.ArbStart("arb1", "BTC")
+	} else if message.Signal == -888 {
+		go tvc.ftxTrade.ArbEnd("arb1", "BTC")
 	}
 
 	go tvc.notification.SendFlashMessage(message)

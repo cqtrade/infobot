@@ -22,6 +22,11 @@ type Subaccount struct {
 	} `json:"result"`
 }
 
+type SubaccountBalance struct {
+	Coin  string  `json:"coin"`
+	Free  float64 `json:"free"`
+	Total float64 `json:"total"`
+}
 type SubaccountBalances struct {
 	Success bool `json:"success"`
 	Result  []struct {
