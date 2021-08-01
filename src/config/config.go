@@ -16,6 +16,8 @@ type Config struct {
 	FTXSecret            string
 	PositionSize         float64
 	ProfitPercentage     float64
+	FutureBTC            string
+	FutureETH            string
 }
 
 func New() *Config {
@@ -34,6 +36,8 @@ func New() *Config {
 		FTXSecret:            viper.GetString("FTX_SECRET"),
 		PositionSize:         viper.GetFloat64("POSITION_SIZE"),
 		ProfitPercentage:     viper.GetFloat64("PROFIT_PERCENTAGE"),
+		FutureBTC:            viper.GetString("FUTURE_BTC"),
+		FutureETH:            viper.GetString("FUTURE_ETH"),
 	}
 }
 

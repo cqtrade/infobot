@@ -19,7 +19,9 @@ var (
 )
 
 func Run() {
-	// ftws.Start()
-	go ft.StartHealthPing()
+	// go ftws.StateLatestPrices()
+	// go ftws.ReadPriceState()
+	// go ftws.Start()
+	// go ft.StartHealthPing()
 	webServer.Run()
 }
