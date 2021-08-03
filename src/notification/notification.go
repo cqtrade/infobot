@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"reflect"
+	"strings"
 	"time"
 
 	"github.com/cqtrade/infobot/src/config"
@@ -74,48 +76,6 @@ func (ds *Notification) SendTextMessage(msg string) {
 	}
 }
 
-/*
-1 oversold LTF
-2 breakout LTF
-11 oversold HTF
-21 breakout HTF
-
--1 overbought LTF
--2 breakdown LTF
--11 overbought HTF
--21 breakdown HTF
-*/
-
-func (ds *Notification) SendJSONMessageToAltSignals(msgJSON types.JSONMessageBody) {
-	m := "**" + msgJSON.Ticker + "**"
-
-	switch s := msgJSON.Signal; s {
-	case 1001:
-		m += " Flash BUY"
-	case -2002:
-		m += " take profit sell"
-	case 1:
-		m += " Long"
-	case 2:
-		m += " Exit Long"
-	case -1:
-		m += " Short"
-	case -2:
-		m += " Exit Short"
-
-	default:
-		m += " unknown signal: " + fmt.Sprintf("%g", s)
-	}
-
-	m += " " + msgJSON.Exchange
-
-	ch := ds.cfg.GetDiscordChByChName("alt-signals")
-	if ch != "" {
-		ds.sendNotification(ch, m)
-		return
-	}
-}
-
 /**
 flash signal gets signals from tested strategies
 */
@@ -147,3 +107,54 @@ func (ds *Notification) SendFlashMessage(msgJSON types.JSONMessageBody) {
 		return
 	}
 }
+
+// https://motyar.github.io/golang-pretty-print-struct/
+/*
+func (p *pp) doPrint(a []interface{}) {
+	prevString := false
+	for argNum, arg := range a {
+		isString := arg != nil && reflect.TypeOf(arg).Kind() == reflect.String
+		// Add a space between two non-string arguments.
+		if argNum > 0 && !isString && !prevString {
+			p.buf.writeByte(' ')
+		}
+		p.printArg(arg, 'v')
+		prevString = isString
+	}
+}
+*/
+func (ds *Notification) Log(level string, a ...interface{}) {
+	var s []string
+	s = append(s, time.Now().Format("Jan 02 15:04:05"))
+	l := strings.ToUpper(level)
+	s = append(s, l)
+	for _, arg := range a {
+		if arg == nil {
+			continue
+		}
+
+		switch reflect.TypeOf(arg).Kind() {
+		case reflect.String:
+			s = append(s, arg.(string))
+		case reflect.Int:
+			s = append(s, fmt.Sprintf("%d", arg))
+		case reflect.Float64:
+			s = append(s, fmt.Sprintf("%.2f", arg))
+		case reflect.Struct:
+			s = append(s, fmt.Sprintf("%+v", arg))
+		default:
+			fmt.Println("Not defined type", reflect.TypeOf(arg).Kind(), arg)
+		}
+	}
+
+	message := strings.Join(s[:], " ")
+	println(message)
+	if l == "INFO" || l == "ERROR" {
+		fmt.Println("TODO send to discord: ", message)
+	} else {
+		fmt.Println(message)
+	}
+}
+
+// fmt.Srintf("%+v\n", p) //With name and value
+// fmt.Srintf("%#v", p) //with name, value and type

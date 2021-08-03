@@ -31,7 +31,7 @@ func (ft *FtxTrade) TpEthBull(subAcc string) {
 	key := ft.cfg.FTXKey
 	secret := ft.cfg.FTXSecret
 	client := ftx.New(key, secret, subAcc)
-	balanceETHBULL, _ := ft.CheckFreeBalanceETHBULL("test1", client)
+	balanceETHBULL, _ := ft.CheckFreeBalanceETHBULL(subAcc, client)
 	market := "ETHBULL/USD"
 	marketPrice, _ := ft.GetLastPriceForMarket(market, client)
 	// calculate value
@@ -56,7 +56,7 @@ func (ft *FtxTrade) BuyEthBull(subAcc string) {
 	key := ft.cfg.FTXKey
 	secret := ft.cfg.FTXSecret
 	client := ftx.New(key, secret, subAcc)
-	equity, _ := ft.CheckBalanceUSD("test1", client)
+	equity, _ := ft.CheckBalanceUSD(subAcc, client)
 	market := "ETHBULL/USD"
 	positionSize := ft.cfg.PositionSize
 	profitPercentage := ft.cfg.ProfitPercentage

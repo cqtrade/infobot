@@ -20,10 +20,11 @@ func (ft *FtxTrade) CheckFuturePosition(client *ftx.FtxClient, future string) (s
 	}
 
 	for _, currPosition := range positions.Result {
+		fmt.Println("Position future\t", currPosition.Future, "\tSide:\t", currPosition.Side, "\tSize:\t", currPosition.Size)
 		if currPosition.Future == future {
 			position = currPosition
+			return position, err
 		}
-		fmt.Println("Position future\t", currPosition.Future, "\tSide:\t", currPosition.Side, "\tSize:\t", currPosition.Size)
 	}
 	return position, err
 }
@@ -44,6 +45,7 @@ func (ft *FtxTrade) CheckSpotBalance(client *ftx.FtxClient, subAcc string, spot 
 		fmt.Println(currBalance.Coin, spot)
 		if currBalance.Coin == spot {
 			balance = currBalance
+			return balance, nil
 		}
 		fmt.Println("Coin\t", currBalance.Coin, "\tfree:\t", currBalance.Free, "\ttotal:\t", currBalance.Total)
 	}

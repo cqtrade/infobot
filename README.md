@@ -12,7 +12,7 @@ cp example.env .env
 
 Debug with Visual Studio Code.
 
-For quick run:
+For a quick run:
 
 ```bash
 go run main.go
@@ -23,3 +23,12 @@ go run main.go
 ```bash
 docker-compose  up -d --build
 ```
+
+## TODO
+ 
+1. FLASH ETHBULL - think about position size
+2. BULL - cp FLASH?
+3. logger to queue
+4. ftx rest retry
+5. ETH dayly signals check if visible 
+6. XBT daily signals

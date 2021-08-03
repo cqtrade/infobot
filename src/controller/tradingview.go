@@ -26,22 +26,7 @@ func (tvc *TvController) PostText(ctx *gin.Context) {
 		println("error " + err.Error()) // TODO needs logger
 		return
 	}
-
-	go func(msg string, t *TvController) {
-		tvc.notification.SendTextMessage(msg)
-	}(string(text), tvc)
-}
-
-func (tvc *TvController) PostJson(ctx *gin.Context) {
-	ctx.JSON(200, gin.H{})
-	var message types.JSONMessageBody
-	err := ctx.ShouldBindJSON(&message)
-	if err != nil {
-		println("error " + err.Error()) // TODO needs logger
-		return
-	}
-
-	tvc.notification.SendJSONMessageToAltSignals(message)
+	go tvc.notification.SendTextMessage(string(text))
 }
 
 func (tvc *TvController) PostFlash(ctx *gin.Context) {
@@ -61,6 +46,12 @@ func (tvc *TvController) PostFlash(ctx *gin.Context) {
 	} else if message.Signal == -888 {
 		go tvc.ftxTrade.ArbEnd("arb1", "BTC")
 	}
+	/**
+	1
+	-1
+	2
+	-2
+		**/
 
 	go tvc.notification.SendFlashMessage(message)
 }

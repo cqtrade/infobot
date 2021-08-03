@@ -40,8 +40,7 @@ func (s *Server) Run() {
 			ctx.JSON(200, gin.H{"ok": true})
 		})
 
-		apiRoutes.POST("/signal-text", s.tvCtrl.PostText)
-		apiRoutes.POST("/signal-json", s.tvCtrl.PostJson)
+		apiRoutes.POST("/text", s.tvCtrl.PostText)
 		apiRoutes.POST("/flash", s.tvCtrl.PostFlash)
 	}
 

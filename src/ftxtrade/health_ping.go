@@ -13,6 +13,7 @@ import (
 func (ft *FtxTrade) StartHealthPing() {
 	for t := range time.Tick(time.Second) {
 		if t.Second() == 33 {
+			// TODO should go to notification queue
 			reqBody := types.NotificationBody{Content: t.Format("Jan 02 15:04") + ft.GetOverview("test1")}
 
 			reqBodyBytes, err := json.Marshal(reqBody)
