@@ -36,6 +36,14 @@ func RoundDown(val float64, precision int) float64 {
 	return math.Floor(val*(math.Pow10(precision))) / math.Pow10(precision)
 }
 
+func RoundUp(val float64, precision int) float64 {
+	return math.Ceil(val*(math.Pow10(precision))) / math.Pow10(precision)
+}
+
+func Round(val float64, precision int) float64 {
+	return math.Round(val*(math.Pow10(precision))) / math.Pow10(precision)
+}
+
 func (ft *FtxTrade) TpEthBull(subAcc string) {
 	fractionPerc := 0.2
 	// get ETHBULL balance

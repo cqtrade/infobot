@@ -3,6 +3,7 @@ package ftxtrade
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/cqtrade/infobot/src/ftx"
 	"github.com/cqtrade/infobot/src/ftx/structs"
@@ -92,16 +93,6 @@ func (ft *FtxTrade) TradeLev(msg types.JSONMessageBody) {
 	secret := ft.cfg.FTXSecret
 	client := ftx.New(key, secret, subAcc)
 
-	/*
-		signal = if buy_enter
-		    1
-		else if sell_enter
-		    -1
-		else if exit_buy
-		    2
-		else if exit_sell
-		    -2
-	*/
 	position, _ := ft.CheckFuturePosition(client, market)
 
 	if position.Size == 0 && (msg.Signal == 2 || msg.Signal == -2) {
@@ -164,13 +155,19 @@ func (ft *FtxTrade) TradeLev(msg types.JSONMessageBody) {
 	}
 
 	var side string
+	var sideOpposite string
 	if msg.Signal == 1 {
 		side = "buy"
+		sideOpposite = "sell"
 	} else if msg.Signal == -1 {
 		side = "sell"
+		sideOpposite = "buy"
 	}
 
 	ft.notif.Log("", market, side)
+
+	time.Sleep(time.Second)
+
 	orderMarketFuture, err := client.PlaceMarketOrder(market, side, "market", positionSize)
 	if err != nil {
 		ft.notif.Log("ERROR", "TradeLev orderMarketFuture. Abort.", err.Error(), orderMarketFuture)
@@ -182,4 +179,47 @@ func (ft *FtxTrade) TradeLev(msg types.JSONMessageBody) {
 	}
 
 	ft.notif.Log("INFO", "TradeLev orderMarketFuture SUCCESS.", orderMarketFuture.Result)
+
+	time.Sleep(time.Second)
+
+	tpSize := RoundUp(positionSize/3, 4)
+	slSize := positionSize
+
+	price, err = ft.appState.ReadLatestPriceForMarket(market)
+	var slPrice float64
+	var tpPrice float64
+	if msg.Signal == 1 {
+		slPrice = Round(price-msg.AtrSL, 1)
+		tpPrice = Round(price+msg.AtrTP, 1)
+	} else if msg.Signal == -1 {
+		slPrice = Round(price+msg.AtrSL, 1)
+		tpPrice = Round(price-msg.AtrTP, 1)
+	}
+
+	ft.notif.Log("", "price", fmt.Sprintf("%.2f", price))
+	ft.notif.Log("", sideOpposite, "slSize", fmt.Sprintf("%.4f", slSize), "slPrice", fmt.Sprintf("%.2f", slPrice))
+	ft.notif.Log("", sideOpposite, "tpSize", fmt.Sprintf("%.4f", tpSize), "tpPrice", fmt.Sprintf("%.2f", tpPrice))
+
+	slOrder, err := client.PlaceTriggerOrder(market, sideOpposite, slSize, "stop", true, true, slPrice, slPrice, 0.0)
+	if err != nil {
+		ft.notif.Log("ERROR", "TradeLev SL order. TODO close position. Abort.", err.Error(), slOrder.Result)
+		return
+	}
+	if !slOrder.Success {
+		ft.notif.Log("ERROR", "TradeLev SL order UNSUCCESSFUL. TODO close position. Abort.", slOrder.Result)
+		return
+	}
+	ft.notif.Log("INFO", "TradeLev SL SUCCESS.", slOrder.Result)
+
+	ft.notif.Log("", sideOpposite, tpSize, tpPrice)
+	tpOrder, err := client.PlaceOrder(market, sideOpposite, tpPrice, "limit", tpSize, true, false, true)
+	if err != nil {
+		ft.notif.Log("ERROR", "TradeLev TP order. Check manually.", err.Error(), tpOrder.Result)
+		return
+	}
+	if !tpOrder.Success {
+		ft.notif.Log("ERROR", "TradeLev TP order UNSUCCESSFUL. Check manually.", tpOrder.Result)
+		return
+	}
+	ft.notif.Log("INFO", "TradeLev TP SUCCESS.", tpOrder.Result)
 }

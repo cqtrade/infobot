@@ -2,6 +2,7 @@ package ftx
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"strconv"
 
@@ -111,6 +112,7 @@ func (client *FtxClient) PlaceOrder(market string, side string, price float64,
 		PostOnly:   postOnly})
 	if err != nil {
 		log.Printf("Error PlaceOrder", err)
+		fmt.Println("Error Place Order", err)
 		return newOrderResponse, err
 	}
 	resp, err := client._post("orders", requestBody)
@@ -135,11 +137,13 @@ func (client *FtxClient) PlaceMarketOrder(market string, side string,
 		PostOnly:   false})
 	if err != nil {
 		log.Printf("Error PlaceOrder", err)
+		fmt.Println("Error Place Market Order", err)
 		return newOrderResponse, err
 	}
 	resp, err := client._post("orders", requestBody)
 	if err != nil {
 		log.Printf("Error PlaceOrder", err)
+		fmt.Println("Error Place Market Order", err)
 		return newOrderResponse, err
 	}
 	err = _processResponse(resp, &newOrderResponse)
@@ -199,12 +203,12 @@ func (client *FtxClient) PlaceTriggerOrder(market string, side string, size floa
 	}
 	requestBody, err := json.Marshal(newTriggerOrder)
 	if err != nil {
-		log.Printf("Error PlaceTriggerOrder", err)
+		fmt.Println("Error PlaceTriggerOrder", err)
 		return newTriggerOrderResponse, err
 	}
 	resp, err := client._post("conditional_orders", requestBody)
 	if err != nil {
-		log.Printf("Error PlaceTriggerOrder", err)
+		fmt.Println("Error PlaceTriggerOrder", err)
 		return newTriggerOrderResponse, err
 	}
 	err = _processResponse(resp, &newTriggerOrderResponse)

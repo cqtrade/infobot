@@ -146,7 +146,7 @@ func (ds *Notification) Log(level string, a ...interface{}) {
 		case reflect.Int:
 			s = append(s, fmt.Sprintf("%d", arg))
 		case reflect.Float64:
-			s = append(s, fmt.Sprintf("%.2f", arg))
+			s = append(s, fmt.Sprintf("%.4f", arg))
 		case reflect.Struct:
 			s = append(s, fmt.Sprintf("%+v", arg))
 		default:
