@@ -18,6 +18,8 @@ type Config struct {
 	ProfitPercentage     float64
 	FutureBTC            string
 	FutureETH            string
+	SubAccBTCD           string
+	SubAccETHD           string
 }
 
 func New() *Config {
@@ -38,6 +40,8 @@ func New() *Config {
 		ProfitPercentage:     viper.GetFloat64("PROFIT_PERCENTAGE"),
 		FutureBTC:            viper.GetString("FUTURE_BTC"),
 		FutureETH:            viper.GetString("FUTURE_ETH"),
+		SubAccBTCD:           viper.GetString("SUBA_BTCD"),
+		SubAccETHD:           viper.GetString("SUBA_ETHD"),
 	}
 }
 

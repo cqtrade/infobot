@@ -126,7 +126,14 @@ func (p *pp) doPrint(a []interface{}) {
 func (ds *Notification) Log(level string, a ...interface{}) {
 	var s []string
 	s = append(s, time.Now().Format("Jan 02 15:04:05"))
-	l := strings.ToUpper(level)
+	var l string
+
+	if level == "" {
+		l = "DEBUG"
+	} else {
+		l = strings.ToUpper(level)
+	}
+
 	s = append(s, l)
 	for _, arg := range a {
 		if arg == nil {
@@ -148,7 +155,7 @@ func (ds *Notification) Log(level string, a ...interface{}) {
 	}
 
 	message := strings.Join(s[:], " ")
-	println(message)
+
 	if l == "INFO" || l == "ERROR" {
 		fmt.Println("TODO send to discord: ", message)
 	} else {

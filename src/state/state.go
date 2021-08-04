@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/cqtrade/infobot/src/config"
+	"github.com/cqtrade/infobot/src/ftx"
 	"github.com/cqtrade/infobot/src/notification"
 )
 
@@ -35,6 +36,7 @@ type State struct {
 func New(cfg config.Config, notif notification.Notification) *State {
 	return &State{
 		cfg:         cfg,
+		notif:       notif,
 		PriceReads:  make(chan ReadPriceOp),
 		PriceWrites: make(chan WritePriceOp),
 	}
@@ -55,6 +57,7 @@ func (s *State) StateLatestPrices() {
 
 func (s *State) ReadLatestPriceForMarket(market string) (float64, error) {
 	var err error
+	var latestPrice float64
 	read := ReadPriceOp{
 		Key:  market,
 		Resp: make(chan ValAt)}
@@ -63,24 +66,45 @@ func (s *State) ReadLatestPriceForMarket(market string) (float64, error) {
 
 	priceAt := <-read.Resp
 
+	shouldRequestFromRest := false
 	if priceAt.Price == 0 {
-		fmt.Println("Price is 0 get new reading via rest")
+		shouldRequestFromRest = true
+		s.notif.Log("ERROR", "ReadLatestPriceForMarket - price is 0 get new reading via rest")
 	}
 
 	if priceAt.At == 0 {
-		fmt.Println("Price time 0 get new reading via rest")
+		shouldRequestFromRest = true
+		s.notif.Log("ERROR", "ReadLatestPriceForMarket - price is 0 get new reading via rest")
 	}
 
 	elapsed := time.Now().Unix() - priceAt.At
 
 	if elapsed > 5 {
-		fmt.Println("Price older than 5 secs get new reading via rest", fmt.Sprintf("%d", time.Now().Unix()-priceAt.At))
+		shouldRequestFromRest = true
+		s.notif.Log("ERROR", "ReadLatestPriceForMarket - Price older than 5 secs", fmt.Sprintf("%d", time.Now().Unix()-priceAt.At))
 	}
 
-	fmt.Println("Elapsed", fmt.Sprintf("%d", time.Now().Unix()-priceAt.At))
+	latestPrice = priceAt.Price
+	if shouldRequestFromRest {
+		s.notif.Log("INFO", "ReadLatestPriceForMarket - request from REST API")
+		key := s.cfg.FTXKey
+		secret := s.cfg.FTXSecret
+		client := ftx.New(key, secret, "")
+		defer client.Client.CloseIdleConnections()
 
-	// TODO check if price is too old
-	return priceAt.Price, err
+		candles, err := client.GetHistoricalPriceLatest(market, 15, 1)
+		if err != nil {
+			return latestPrice, err
+		}
+
+		if len(candles.Result) > 0 {
+			candle := candles.Result[0]
+			s.notif.Log("", market, latestPrice, candle.Close)
+			latestPrice = candle.Close
+		}
+	}
+
+	return latestPrice, err
 }
 
 func (s *State) ReadPriceState() {

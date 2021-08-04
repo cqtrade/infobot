@@ -1,17 +1,7 @@
 package types
 
-/*
-{
-	"signal":{{plot("Signal")}},
-	"ticker":"{{ticker}}",
-	"atrtp":{{plot("AtrTp")}},
-	"atrsl":{{plot("AtrSl")}},
-	"risk":{{plot("Risk")}}",
-	"exchange":"{{exchange}}"
-}
-*/
 type JSONMessageBody struct {
-	Signal   float64 `json:"signal,omitempty"`
+	Signal   float64 `json:"sig,omitempty"`
 	Ticker   string  `json:"ticker,omitempty"`
 	AtrTP    float64 `json:"atrtp,omitempty"`
 	AtrSL    float64 `json:"atrsl,omitempty"`

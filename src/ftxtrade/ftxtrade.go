@@ -10,19 +10,30 @@ import (
 
 	"github.com/cqtrade/infobot/src/config"
 	"github.com/cqtrade/infobot/src/ftx"
+	"github.com/cqtrade/infobot/src/notification"
+	"github.com/cqtrade/infobot/src/state"
 )
 
 type FtxTrade struct {
 	cfg        config.Config
+	notif      notification.Notification
+	appState   state.State
 	httpClient *http.Client
 }
 
-func New(cfg config.Config) *FtxTrade {
+func New(cfg config.Config, notif notification.Notification, appState state.State) *FtxTrade {
 	httpClient := &http.Client{Timeout: 10 * time.Second}
 	return &FtxTrade{
 		cfg:        cfg,
+		notif:      notif,
+		appState:   appState,
 		httpClient: httpClient,
 	}
+}
+
+// https://stackoverflow.com/questions/18390266/how-can-we-truncate-float64-type-to-a-particular-precision
+func RoundDown(val float64, precision int) float64 {
+	return math.Floor(val*(math.Pow10(precision))) / math.Pow10(precision)
 }
 
 func (ft *FtxTrade) TpEthBull(subAcc string) {
@@ -94,7 +105,7 @@ func (ft *FtxTrade) BuyEthBull(subAcc string) {
 
 func (ft *FtxTrade) GetLastPriceForMarket(market string, client *ftx.FtxClient) (float64, error) {
 	marketPrice := 0.0
-	candles, err := client.GetHistoricalPricesLatest(market, 60, 1)
+	candles, err := client.GetHistoricalPriceLatest(market, 15, 1)
 	if err != nil {
 		return marketPrice, err
 	}

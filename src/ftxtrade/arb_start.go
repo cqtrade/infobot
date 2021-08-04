@@ -2,15 +2,9 @@ package ftxtrade
 
 import (
 	"fmt"
-	"math"
 
 	"github.com/cqtrade/infobot/src/ftx"
 )
-
-// https://stackoverflow.com/questions/18390266/how-can-we-truncate-float64-type-to-a-particular-precision
-func RoundDown(val float64, precision int) float64 {
-	return math.Floor(val*(math.Pow10(precision))) / math.Pow10(precision)
-}
 
 func (ft *FtxTrade) ArbStart(subAcc string, name string) {
 	var spot string
