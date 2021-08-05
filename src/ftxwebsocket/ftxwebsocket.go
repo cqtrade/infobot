@@ -7,6 +7,7 @@ import (
 
 	"github.com/cqtrade/infobot/src/config"
 	"github.com/cqtrade/infobot/src/state"
+	"github.com/cqtrade/infobot/src/types"
 	"github.com/wzbear/go-ftx/realtime"
 )
 
@@ -34,9 +35,9 @@ func (ftws *FtxWebSocket) Start() {
 		case v := <-ch:
 			switch v.Type {
 			case realtime.TICKER:
-				write := state.WritePriceOp{
+				write := types.WritePriceOp{
 					Key: v.Symbol,
-					Val: state.ValAt{
+					Val: types.ValAt{
 						Price: v.Ticker.Last,
 						At:    time.Now().Unix(),
 					},

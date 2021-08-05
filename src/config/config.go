@@ -6,12 +6,12 @@ import (
 
 type Config struct {
 	DiscordEnabled       bool
-	DiscordChBtcVibe     string
 	DiscordChRandomIdeas string
 	DiscordChAltSignals  string
 	DiscordChFlash       string
 	DiscordChHealth      string
-	serverUrl            string
+	DiscordChLogs        string
+	ServerUrl            string
 	FTXKey               string
 	FTXSecret            string
 	PositionSize         float64
@@ -28,12 +28,12 @@ func New() *Config {
 	viper.AutomaticEnv()
 	return &Config{
 		DiscordEnabled:       viper.GetBool("DISCORD_ENABLED"),
-		DiscordChBtcVibe:     viper.GetString("DISCORD_CH_BTC_VIBE"),
 		DiscordChRandomIdeas: viper.GetString("DISCORD_CH_RANDOM_IDEAS"),
 		DiscordChAltSignals:  viper.GetString("DISCORD_CH_ALTSIGNALS"),
 		DiscordChFlash:       viper.GetString("DISCORD_CH_FLASH"),
 		DiscordChHealth:      viper.GetString("DISCORD_CH_HEALTH"),
-		serverUrl:            viper.GetString("SERVER_URL"),
+		DiscordChLogs:        viper.GetString("DISCORD_CH_LOGS"),
+		ServerUrl:            viper.GetString("SERVER_URL"),
 		FTXKey:               viper.GetString("FTX_KEY"),
 		FTXSecret:            viper.GetString("FTX_SECRET"),
 		PositionSize:         viper.GetFloat64("POSITION_SIZE"),
@@ -50,9 +50,6 @@ func (c *Config) GetDiscordEnabled() bool {
 }
 
 func (c *Config) GetDiscordChByChName(name string) string {
-	if name == "btc-vibe" {
-		return c.DiscordChBtcVibe
-	}
 	if name == "flash" {
 		return c.DiscordChFlash
 	}
@@ -66,5 +63,5 @@ func (c *Config) GetDiscordChByChName(name string) string {
 }
 
 func (c *Config) GetServerUrl() string {
-	return c.serverUrl
+	return c.ServerUrl
 }

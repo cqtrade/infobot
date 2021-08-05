@@ -2,6 +2,7 @@ package notification
 
 import (
 	"bytes"
+	"container/list"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -14,15 +15,54 @@ import (
 )
 
 type Notification struct {
-	cfg        config.Config
-	httpClient *http.Client
+	cfg                config.Config
+	httpClient         *http.Client
+	ChLogMessageReads  chan types.ReadLogMessage
+	ChLogMessageWrites chan types.WriteLogMessage
 }
 
 func New(cfg config.Config) *Notification {
 	httpClient := &http.Client{Timeout: 10 * time.Second}
 	return &Notification{
-		cfg:        cfg,
-		httpClient: httpClient,
+		cfg:                cfg,
+		httpClient:         httpClient,
+		ChLogMessageReads:  make(chan types.ReadLogMessage),
+		ChLogMessageWrites: make(chan types.WriteLogMessage),
+	}
+}
+
+func (ds *Notification) RunStateLogMessages() {
+	queue := list.New()
+	for {
+		select {
+		case read := <-ds.ChLogMessageReads:
+			e := queue.Front()
+			if e != nil {
+				queue.Remove(e)
+				read.Resp <- e.Value.(types.LogMessage)
+			} else {
+				var l types.LogMessage
+				read.Resp <- l
+			}
+
+		case write := <-ds.ChLogMessageWrites:
+			queue.PushBack(write.Val)
+			write.Resp <- true
+		}
+	}
+}
+
+func (ds *Notification) RunReadLogMessages() {
+	for {
+		time.Sleep(3 * time.Second)
+		read := types.ReadLogMessage{Resp: make(chan types.LogMessage)}
+		ds.ChLogMessageReads <- read
+		res := <-read.Resp
+		if res.Channel == "" || res.Message == "" {
+			fmt.Println("empty")
+		} else {
+			fmt.Println(fmt.Sprintf("%+v", res))
+		}
 	}
 }
 
@@ -76,9 +116,6 @@ func (ds *Notification) SendTextMessage(msg string) {
 	}
 }
 
-/**
-flash signal gets signals from tested strategies
-*/
 func (ds *Notification) SendFlashMessage(msgJSON types.JSONMessageBody) {
 	// TODO format message
 	m := "**" + msgJSON.Ticker + "**"
@@ -108,21 +145,6 @@ func (ds *Notification) SendFlashMessage(msgJSON types.JSONMessageBody) {
 	}
 }
 
-// https://motyar.github.io/golang-pretty-print-struct/
-/*
-func (p *pp) doPrint(a []interface{}) {
-	prevString := false
-	for argNum, arg := range a {
-		isString := arg != nil && reflect.TypeOf(arg).Kind() == reflect.String
-		// Add a space between two non-string arguments.
-		if argNum > 0 && !isString && !prevString {
-			p.buf.writeByte(' ')
-		}
-		p.printArg(arg, 'v')
-		prevString = isString
-	}
-}
-*/
 func (ds *Notification) Log(level string, a ...interface{}) {
 	var s []string
 	s = append(s, time.Now().Format("Jan 02 15:04:05"))
@@ -157,11 +179,12 @@ func (ds *Notification) Log(level string, a ...interface{}) {
 	message := strings.Join(s[:], " ")
 
 	if l == "INFO" || l == "ERROR" {
-		fmt.Println("TODO send to discord: ", message)
+		write := types.WriteLogMessage{
+			Val:  types.LogMessage{Message: message, Channel: ds.cfg.DiscordChLogs},
+			Resp: make(chan bool)}
+		ds.ChLogMessageWrites <- write
+		<-write.Resp
 	} else {
 		fmt.Println(message)
 	}
 }
-
-// fmt.Srintf("%+v\n", p) //With name and value
-// fmt.Srintf("%#v", p) //with name, value and type

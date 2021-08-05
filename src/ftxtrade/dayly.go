@@ -211,7 +211,8 @@ func (ft *FtxTrade) TradeLev(msg types.JSONMessageBody) {
 	}
 	ft.notif.Log("INFO", "TradeLev SL SUCCESS.", slOrder.Result)
 
-	ft.notif.Log("", sideOpposite, tpSize, tpPrice)
+	// post only & reduce only tp order & edge case: market order is not yet filled enough to cover size of tp, expect 400
+	// possible solution a) use trigger order b) add order in position check, not good solution
 	tpOrder, err := client.PlaceOrder(market, sideOpposite, tpPrice, "limit", tpSize, true, false, true)
 	if err != nil {
 		ft.notif.Log("ERROR", "TradeLev TP order. Check manually.", err.Error(), tpOrder.Result)

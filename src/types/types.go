@@ -14,3 +14,32 @@ type JSONMessageBody struct {
 type NotificationBody struct {
 	Content string `json:"content"`
 }
+
+type LogMessage struct {
+	Message string
+	Channel string
+}
+
+type ReadLogMessage struct {
+	Resp chan LogMessage
+}
+
+type WriteLogMessage struct {
+	Val  LogMessage
+	Resp chan bool
+}
+
+type ValAt struct {
+	Price float64
+	At    int64
+}
+type ReadPriceOp struct {
+	Key  string
+	Resp chan ValAt
+}
+
+type WritePriceOp struct {
+	Key  string
+	Val  ValAt
+	Resp chan bool
+}

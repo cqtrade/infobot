@@ -21,19 +21,11 @@ var (
 )
 
 func Run() {
-	go appState.StateLatestPrices()
-	go ftws.Start()
+	// go appState.StateLatestPrices()
+	// go ftws.Start()
 	// go ft.StartHealthPing()
+	go notif.RunStateLogMessages()
+	go notif.RunReadLogMessages()
+	go notif.Log("INFO", "Boot")
 	webServer.Run()
-	/*
-		type Person struct {
-			name string
-			age  int
-		}
-		var p Person
-		p.name = "Motyar"
-		p.age = 120
-
-		notif.notif("error", nil, 2, "tere", 2.3, p, errors.New("OMG").Error())
-	*/
 }

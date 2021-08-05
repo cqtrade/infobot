@@ -7,49 +7,35 @@ import (
 	"github.com/cqtrade/infobot/src/config"
 	"github.com/cqtrade/infobot/src/ftx"
 	"github.com/cqtrade/infobot/src/notification"
+	"github.com/cqtrade/infobot/src/types"
 )
 
 // https://gobyexample.com/stateful-goroutines
 
-type ValAt struct {
-	Price float64
-	At    int64
-}
-type ReadPriceOp struct {
-	Key  string
-	Resp chan ValAt
-}
-
-type WritePriceOp struct {
-	Key  string
-	Val  ValAt
-	Resp chan bool
-}
-
 type State struct {
 	cfg         config.Config
 	notif       notification.Notification
-	PriceReads  chan ReadPriceOp
-	PriceWrites chan WritePriceOp
+	PriceReads  chan types.ReadPriceOp
+	PriceWrites chan types.WritePriceOp
 }
 
 func New(cfg config.Config, notif notification.Notification) *State {
 	return &State{
 		cfg:         cfg,
 		notif:       notif,
-		PriceReads:  make(chan ReadPriceOp),
-		PriceWrites: make(chan WritePriceOp),
+		PriceReads:  make(chan types.ReadPriceOp),
+		PriceWrites: make(chan types.WritePriceOp),
 	}
 }
 
 func (s *State) StateLatestPrices() {
-	latestPrices := make(map[string]ValAt)
+	latestPrices := make(map[string]types.ValAt)
 	for {
 		select {
 		case read := <-s.PriceReads:
 			read.Resp <- latestPrices[read.Key]
 		case write := <-s.PriceWrites:
-			latestPrices[write.Key] = ValAt{Price: write.Val.Price, At: write.Val.At}
+			latestPrices[write.Key] = types.ValAt{Price: write.Val.Price, At: write.Val.At}
 			write.Resp <- true
 		}
 	}
@@ -58,9 +44,9 @@ func (s *State) StateLatestPrices() {
 func (s *State) ReadLatestPriceForMarket(market string) (float64, error) {
 	var err error
 	var latestPrice float64
-	read := ReadPriceOp{
+	read := types.ReadPriceOp{
 		Key:  market,
-		Resp: make(chan ValAt)}
+		Resp: make(chan types.ValAt)}
 
 	s.PriceReads <- read
 
