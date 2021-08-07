@@ -10,7 +10,13 @@ type Positions structs.Positions
 
 func (client *FtxClient) GetPositions(showAvgPrice bool) (Positions, error) {
 	var positions Positions
-	resp, err := client._get("positions", []byte(""))
+	var url string
+	if showAvgPrice {
+		url = "positions?showAvgPrice=true"
+	} else {
+		url = "positions"
+	}
+	resp, err := client._get(url, []byte(""))
 	if err != nil {
 		log.Printf("Error GetPositions", err)
 		return positions, err

@@ -23,47 +23,14 @@ func (ft *FtxTrade) closePosition(client *ftx.FtxClient, market string, position
 	} else if orderMarketFuture.Success {
 		ft.notif.Log("INFO", position.Future, "SUCCESS closing", position.Side)
 		co, err := client.CancelAllOrders()
-		if err != nil || !co.Success {
-			ft.notif.Log("ERROR", position.Future, "cancel all open orders", err.Error(), co)
+		if err != nil {
+			ft.notif.Log("ERROR", position.Future, "cancel all open orders", err.Error())
+		} else if !co.Success {
+			ft.notif.Log("ERROR", position.Future, "cancel all open orders", co)
 		} else {
 			ft.notif.Log("INFO", position.Future, "SUCCESS cancel all open orders")
 		}
 	}
-}
-
-func (ft *FtxTrade) handlePosition(client *ftx.FtxClient, market string) {
-	position, _ := ft.CheckFuturePosition(client, market)
-	ft.notif.Log("", position)
-
-	openOrders, err := client.GetOpenOrders(market)
-	if err != nil || !openOrders.Success {
-		ft.notif.Log("ERROR", "getting open orders", err.Error(), openOrders)
-	}
-	openTriggerOrders, err := client.GetOpenTriggerOrders(market, "stop")
-	if err != nil || !openTriggerOrders.Success {
-		ft.notif.Log("ERROR", "getting open trigger orders", err.Error(), openTriggerOrders)
-	}
-
-	fmt.Println("#####")
-	fmt.Println("Open orders length", len(openOrders.Result))
-	fmt.Println("Open trigger orders length", len(openTriggerOrders.Result))
-	fmt.Println("#####")
-}
-
-func (ft *FtxTrade) CheckPositionBTC(msg types.JSONMessageBody) {
-	subAcc := ft.cfg.SubAccBTCD
-	key := ft.cfg.FTXKey
-	secret := ft.cfg.FTXSecret
-	client := ftx.New(key, secret, subAcc)
-	ft.handlePosition(client, ft.cfg.FutureBTC)
-}
-
-func (ft *FtxTrade) CheckPositionETH(msg types.JSONMessageBody) {
-	subAcc := ft.cfg.SubAccETHD
-	key := ft.cfg.FTXKey
-	secret := ft.cfg.FTXSecret
-	client := ftx.New(key, secret, subAcc)
-	ft.handlePosition(client, ft.cfg.FutureETH)
 }
 
 func (ft *FtxTrade) TradeLev(msg types.JSONMessageBody) {
@@ -120,7 +87,7 @@ func (ft *FtxTrade) TradeLev(msg types.JSONMessageBody) {
 
 	if err != nil {
 		fmt.Println("Error getting balance", err)
-		ft.notif.Log("ERROR", "TradeLev CheckSpotBalance. Abort.", err.Error(), sBalanceUSD)
+		ft.notif.Log("ERROR", "TradeLev CheckSpotBalance. Abort.", err.Error())
 		return
 	}
 
@@ -170,15 +137,16 @@ func (ft *FtxTrade) TradeLev(msg types.JSONMessageBody) {
 
 	orderMarketFuture, err := client.PlaceMarketOrder(market, side, "market", positionSize)
 	if err != nil {
-		ft.notif.Log("ERROR", "TradeLev orderMarketFuture. Abort.", err.Error(), orderMarketFuture)
+		ft.notif.Log("ERROR", "TradeLev orderMarketFuture. Abort.", err.Error())
 		return
 	}
+
 	if !orderMarketFuture.Success {
 		ft.notif.Log("ERROR", "TradeLev orderMarketFuture no success. Abort.", orderMarketFuture)
 		return
 	}
 
-	ft.notif.Log("INFO", "TradeLev orderMarketFuture SUCCESS.", orderMarketFuture.Result)
+	ft.notif.Log("INFO", "TradeLev orderMarketFuture SUCCESS.")
 
 	time.Sleep(time.Second)
 
@@ -200,27 +168,26 @@ func (ft *FtxTrade) TradeLev(msg types.JSONMessageBody) {
 	ft.notif.Log("", sideOpposite, "slSize", fmt.Sprintf("%.4f", slSize), "slPrice", fmt.Sprintf("%.2f", slPrice))
 	ft.notif.Log("", sideOpposite, "tpSize", fmt.Sprintf("%.4f", tpSize), "tpPrice", fmt.Sprintf("%.2f", tpPrice))
 
-	slOrder, err := client.PlaceTriggerOrder(market, sideOpposite, slSize, "stop", true, true, slPrice, slPrice, 0.0)
+	slOrder, err := client.PlaceTriggerOrder(market, sideOpposite, slSize, "stop", true, true, slPrice, 0.0, 0.0)
 	if err != nil {
-		ft.notif.Log("ERROR", "TradeLev SL order. TODO close position. Abort.", err.Error(), slOrder.Result)
+		ft.notif.Log("ERROR", "TradeLev SL order. TODO close position. Abort.", err.Error())
 		return
 	}
 	if !slOrder.Success {
 		ft.notif.Log("ERROR", "TradeLev SL order UNSUCCESSFUL. TODO close position. Abort.", slOrder.Result)
 		return
 	}
-	ft.notif.Log("INFO", "TradeLev SL SUCCESS.", slOrder.Result)
+	ft.notif.Log("INFO", "TradeLev SL SUCCESS.")
 
-	// post only & reduce only tp order & edge case: market order is not yet filled enough to cover size of tp, expect 400
-	// possible solution a) use trigger order b) add order in position check, not good solution
-	tpOrder, err := client.PlaceOrder(market, sideOpposite, tpPrice, "limit", tpSize, true, false, true)
+	// tpOrderOld, err := client.PlaceOrder(market, sideOpposite, tpPrice, "limit", tpSize, true, false, true)
+	tpOrder, err := client.PlaceTriggerOrder(market, sideOpposite, tpSize, "takeProfit", true, true, tpPrice, 0.0, 0.0)
 	if err != nil {
-		ft.notif.Log("ERROR", "TradeLev TP order. Check manually.", err.Error(), tpOrder.Result)
+		ft.notif.Log("ERROR", "TradeLev TP order. Check manually.", err.Error())
 		return
 	}
 	if !tpOrder.Success {
 		ft.notif.Log("ERROR", "TradeLev TP order UNSUCCESSFUL. Check manually.", tpOrder.Result)
 		return
 	}
-	ft.notif.Log("INFO", "TradeLev TP SUCCESS.", tpOrder.Result)
+	ft.notif.Log("INFO", "TradeLev TP SUCCESS.")
 }

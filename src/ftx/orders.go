@@ -14,6 +14,7 @@ type NewOrderResponse structs.NewOrderResponse
 type OpenOrders structs.OpenOrders
 type OrderHistory structs.OrderHistory
 type NewTriggerOrder structs.NewTriggerOrder
+type ModifyTriggerOrder structs.ModifyTriggerOrder
 type NewTriggerOrderResponse structs.NewTriggerOrderResponse
 type OpenTriggerOrders structs.OpenTriggerOrders
 type TriggerOrderHistory structs.TriggerOrderHistory
@@ -51,9 +52,25 @@ func (client *FtxClient) GetOrderHistory(market string, startTime float64, endTi
 	return orderHistory, err
 }
 
-func (client *FtxClient) GetOpenTriggerOrders(market string, _type string) (OpenTriggerOrders, error) {
+func (client *FtxClient) GetOpenTriggerOrdersOriginal(market string, _type string) (OpenTriggerOrders, error) {
 	var openTriggerOrders OpenTriggerOrders
 	requestBody, err := json.Marshal(map[string]string{"market": market, "type": _type})
+	if err != nil {
+		log.Printf("Error GetOpenTriggerOrders", err)
+		return openTriggerOrders, err
+	}
+	resp, err := client._get("conditional_orders?market="+market, requestBody)
+	if err != nil {
+		log.Printf("Error GetOpenTriggerOrders", err)
+		return openTriggerOrders, err
+	}
+	err = _processResponse(resp, &openTriggerOrders)
+	return openTriggerOrders, err
+}
+
+func (client *FtxClient) GetOpenTriggerOrders(market string) (OpenTriggerOrders, error) {
+	var openTriggerOrders OpenTriggerOrders
+	requestBody, err := json.Marshal(map[string]string{"market": market})
 	if err != nil {
 		log.Printf("Error GetOpenTriggerOrders", err)
 		return openTriggerOrders, err
@@ -189,15 +206,27 @@ func (client *FtxClient) PlaceTriggerOrder(market string, side string, size floa
 			TrailValue: trailValue,
 		}
 	case "takeProfit":
-		newTriggerOrder = NewTriggerOrder{
-			Market:       market,
-			Side:         side,
-			TriggerPrice: triggerPrice,
-			Type:         _type,
-			Size:         size,
-			ReduceOnly:   reduceOnly,
-			OrderPrice:   orderPrice,
+		if orderPrice != 0 {
+			newTriggerOrder = NewTriggerOrder{
+				Market:       market,
+				Side:         side,
+				TriggerPrice: triggerPrice,
+				Type:         _type,
+				Size:         size,
+				ReduceOnly:   reduceOnly,
+				OrderPrice:   orderPrice,
+			}
+		} else {
+			newTriggerOrder = NewTriggerOrder{
+				Market:       market,
+				Side:         side,
+				TriggerPrice: triggerPrice,
+				Type:         _type,
+				Size:         size,
+				ReduceOnly:   reduceOnly,
+			}
 		}
+
 	default:
 		log.Printf("Trigger type is not valid")
 	}
@@ -248,4 +277,29 @@ func (client *FtxClient) CancelAllOrders() (Response, error) {
 	}
 	err = _processResponse(resp, &deleteResponse)
 	return deleteResponse, err
+}
+
+func (client *FtxClient) ModifyTriggerOrder(orderId int64, size float64, triggerPrice float64) (NewTriggerOrderResponse, error) {
+
+	var newTriggerOrderResponse NewTriggerOrderResponse
+	var modifyTriggerOrder ModifyTriggerOrder
+	modifyTriggerOrder = ModifyTriggerOrder{
+		TriggerPrice: triggerPrice,
+		Size:         size,
+	}
+	id := strconv.FormatInt(orderId, 10)
+	requestBody, err := json.Marshal(modifyTriggerOrder)
+	if err != nil {
+		fmt.Println("Error PlaceTriggerOrder", err)
+		return newTriggerOrderResponse, err
+	}
+	resp, err := client._post("conditional_orders/"+id+"/modify", requestBody)
+	fmt.Println("Modify order CODE", resp.Status)
+	// resp, err := client._post("conditional_orders/"+id, []byte(""))
+	if err != nil {
+		fmt.Println("Error PlaceTriggerOrder", err)
+		return newTriggerOrderResponse, err
+	}
+	err = _processResponse(resp, &newTriggerOrderResponse)
+	return newTriggerOrderResponse, err
 }

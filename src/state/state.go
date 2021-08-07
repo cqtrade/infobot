@@ -28,7 +28,7 @@ func New(cfg config.Config, notif notification.Notification) *State {
 	}
 }
 
-func (s *State) StateLatestPrices() {
+func (s *State) RunStateLatestPrices() {
 	latestPrices := make(map[string]types.ValAt)
 	for {
 		select {
@@ -93,19 +93,19 @@ func (s *State) ReadLatestPriceForMarket(market string) (float64, error) {
 	return latestPrice, err
 }
 
-func (s *State) ReadPriceState() {
-	time.Sleep(time.Second * 3)
-	for {
+// func (s *State) ReadPriceState() {
+// 	time.Sleep(time.Second * 3)
+// 	for {
 
-		latestBTCf, _ := s.ReadLatestPriceForMarket(s.cfg.FutureBTC)
-		latestBTCs, _ := s.ReadLatestPriceForMarket("BTC/USD")
-		latestETHf, _ := s.ReadLatestPriceForMarket(s.cfg.FutureETH)
-		latestETHs, _ := s.ReadLatestPriceForMarket("ETH/USD")
+// 		latestBTCf, _ := s.ReadLatestPriceForMarket(s.cfg.FutureBTC)
+// 		latestBTCs, _ := s.ReadLatestPriceForMarket("BTC/USD")
+// 		latestETHf, _ := s.ReadLatestPriceForMarket(s.cfg.FutureETH)
+// 		latestETHs, _ := s.ReadLatestPriceForMarket("ETH/USD")
 
-		fmt.Println("BTC/USD\t\t", fmt.Sprintf("%.2f", latestBTCs), "\tETH/USD\t\t", fmt.Sprintf("%.2f", latestETHs))
-		// fmt.Println(s.cfg.FutureBTC, "\t", fmt.Sprintf("%.2f", latestBTCf), "\t", s.cfg.FutureETH, "\t", fmt.Sprintf("%.2f", latestETHf))
-		fmt.Println("BTC premium\t\t", fmt.Sprintf("%.2f%%", latestBTCf*100/latestBTCs-100), "\tETH premium\t\t", fmt.Sprintf("%.2f%%", latestETHf*100/latestETHs-100))
-		fmt.Println(time.Now().Unix())
-		time.Sleep(time.Second * 5)
-	}
-}
+// 		fmt.Println("BTC/USD\t\t", fmt.Sprintf("%.2f", latestBTCs), "\tETH/USD\t\t", fmt.Sprintf("%.2f", latestETHs))
+// 		// fmt.Println(s.cfg.FutureBTC, "\t", fmt.Sprintf("%.2f", latestBTCf), "\t", s.cfg.FutureETH, "\t", fmt.Sprintf("%.2f", latestETHf))
+// 		fmt.Println("BTC premium\t\t", fmt.Sprintf("%.2f%%", latestBTCf*100/latestBTCs-100), "\tETH premium\t\t", fmt.Sprintf("%.2f%%", latestETHf*100/latestETHs-100))
+// 		fmt.Println(time.Now().Unix())
+// 		time.Sleep(time.Second * 5)
+// 	}
+// }

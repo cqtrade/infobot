@@ -23,7 +23,7 @@ func New(cfg config.Config, st state.State) *FtxWebSocket {
 	}
 }
 
-func (ftws *FtxWebSocket) Start() {
+func (ftws *FtxWebSocket) RunWebSocket() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 

@@ -64,6 +64,11 @@ type NewTriggerOrder struct {
 	TrailValue       float64 `json:"trailValue,omitempty"`
 }
 
+type ModifyTriggerOrder struct {
+	Size         float64 `json:"size"`
+	TriggerPrice float64 `json:"triggerPrice,omitempty"`
+}
+
 type NewTriggerOrderResponse struct {
 	Success bool         `json:"success"`
 	Result  TriggerOrder `json:"result"`

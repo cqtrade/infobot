@@ -6,7 +6,7 @@ import (
 	"github.com/cqtrade/infobot/src/types"
 )
 
-func (ft *FtxTrade) StartHealthPing() {
+func (ft *FtxTrade) RunHealthPing() {
 	if ft.cfg.HealthLogEnabled {
 		for t := range time.Tick(time.Second) {
 			if t.Second() == 33 {
