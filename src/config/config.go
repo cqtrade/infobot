@@ -6,6 +6,7 @@ import (
 
 type Config struct {
 	DiscordEnabled       bool
+	HealthLogEnabled     bool
 	DiscordChRandomIdeas string
 	DiscordChAltSignals  string
 	DiscordChFlash       string
@@ -28,6 +29,7 @@ func New() *Config {
 	viper.AutomaticEnv()
 	return &Config{
 		DiscordEnabled:       viper.GetBool("DISCORD_ENABLED"),
+		HealthLogEnabled:     viper.GetBool("HEALTH_LOG_ENABLED"),
 		DiscordChRandomIdeas: viper.GetString("DISCORD_CH_RANDOM_IDEAS"),
 		DiscordChAltSignals:  viper.GetString("DISCORD_CH_ALTSIGNALS"),
 		DiscordChFlash:       viper.GetString("DISCORD_CH_FLASH"),
@@ -43,25 +45,4 @@ func New() *Config {
 		SubAccBTCD:           viper.GetString("SUBA_BTCD"),
 		SubAccETHD:           viper.GetString("SUBA_ETHD"),
 	}
-}
-
-func (c *Config) GetDiscordEnabled() bool {
-	return c.DiscordEnabled
-}
-
-func (c *Config) GetDiscordChByChName(name string) string {
-	if name == "flash" {
-		return c.DiscordChFlash
-	}
-	if name == "alt-signals" {
-		return c.DiscordChAltSignals
-	}
-	if name == "random-ideas" {
-		return c.DiscordChRandomIdeas
-	}
-	return ""
-}
-
-func (c *Config) GetServerUrl() string {
-	return c.ServerUrl
 }

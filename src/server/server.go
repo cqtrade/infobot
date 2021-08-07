@@ -44,5 +44,5 @@ func (s *Server) Run() {
 		apiRoutes.POST("/flash", s.tvCtrl.PostFlash)
 	}
 
-	s.server.Run(s.cfg.GetServerUrl())
+	s.server.Run(s.cfg.ServerUrl)
 }

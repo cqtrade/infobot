@@ -40,7 +40,7 @@ func (tvc *TvController) PostFlash(ctx *gin.Context) {
 		return
 	}
 
-	// go tvc.notif.SendFlashMessage(message)
+	go tvc.notif.SendFlashMessage(message)
 
 	switch message.Signal {
 	case 1001:

@@ -52,21 +52,7 @@ func (ds *Notification) RunStateLogMessages() {
 	}
 }
 
-func (ds *Notification) RunReadLogMessages() {
-	for {
-		time.Sleep(3 * time.Second)
-		read := types.ReadLogMessage{Resp: make(chan types.LogMessage)}
-		ds.ChLogMessageReads <- read
-		res := <-read.Resp
-		if res.Channel == "" || res.Message == "" {
-			fmt.Println("empty")
-		} else {
-			fmt.Println(fmt.Sprintf("%+v", res))
-		}
-	}
-}
-
-func reqToDiscord(webhookUrl string, msg string, client *http.Client) { // maybe not a good idea to share same http client between goroutines
+func reqToDiscord(webhookUrl string, msg string, client *http.Client) {
 
 	reqBody := types.NotificationBody{Content: msg}
 
@@ -99,25 +85,32 @@ func reqToDiscord(webhookUrl string, msg string, client *http.Client) { // maybe
 	}
 }
 
-func (ds *Notification) sendNotification(ch string, message string) {
-	if !ds.cfg.GetDiscordEnabled() {
-		return
+func (ds *Notification) RunReadLogMessages() {
+	for {
+		read := types.ReadLogMessage{Resp: make(chan types.LogMessage)}
+		ds.ChLogMessageReads <- read
+		res := <-read.Resp
+		if res.Channel == "" || res.Message == "" {
+			continue
+		}
+		fmt.Println(res.Message)
+		if !ds.cfg.DiscordEnabled {
+			return
+		}
+		reqToDiscord(res.Channel, res.Message, ds.httpClient)
+		time.Sleep(time.Second)
 	}
-
-	message = time.Now().Format("Jan 02 15:04:01") + " " + message
-	go reqToDiscord(ch, message, ds.httpClient)
 }
 
 func (ds *Notification) SendTextMessage(msg string) {
-	ch := ds.cfg.GetDiscordChByChName("random-ideas")
-	if ch != "" {
-		ds.sendNotification(ch, msg)
-		return
-	}
+	write := types.WriteLogMessage{
+		Val:  types.LogMessage{Message: msg, Channel: ds.cfg.DiscordChRandomIdeas},
+		Resp: make(chan bool)}
+	ds.ChLogMessageWrites <- write
+	<-write.Resp
 }
 
 func (ds *Notification) SendFlashMessage(msgJSON types.JSONMessageBody) {
-	// TODO format message
 	m := "**" + msgJSON.Ticker + "**"
 
 	switch s := msgJSON.Signal; s {
@@ -138,11 +131,11 @@ func (ds *Notification) SendFlashMessage(msgJSON types.JSONMessageBody) {
 		m += " unknown signal: " + fmt.Sprintf("%g", s)
 	}
 
-	ch := ds.cfg.GetDiscordChByChName("flash")
-	if ch != "" {
-		ds.sendNotification(ch, m)
-		return
-	}
+	write := types.WriteLogMessage{
+		Val:  types.LogMessage{Message: m, Channel: ds.cfg.DiscordChFlash},
+		Resp: make(chan bool)}
+	ds.ChLogMessageWrites <- write
+	<-write.Resp
 }
 
 func (ds *Notification) Log(level string, a ...interface{}) {

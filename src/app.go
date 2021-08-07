@@ -21,11 +21,11 @@ var (
 )
 
 func Run() {
-	// go appState.StateLatestPrices()
-	// go ftws.Start()
-	// go ft.StartHealthPing()
 	go notif.RunStateLogMessages()
 	go notif.RunReadLogMessages()
+	go appState.StateLatestPrices()
+	go ftws.Start()
+	go ft.StartHealthPing()
 	go notif.Log("INFO", "Boot")
 	webServer.Run()
 }
