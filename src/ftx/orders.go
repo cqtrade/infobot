@@ -294,8 +294,6 @@ func (client *FtxClient) ModifyTriggerOrder(orderId int64, size float64, trigger
 		return newTriggerOrderResponse, err
 	}
 	resp, err := client._post("conditional_orders/"+id+"/modify", requestBody)
-	fmt.Println("Modify order CODE", resp.Status)
-	// resp, err := client._post("conditional_orders/"+id, []byte(""))
 	if err != nil {
 		fmt.Println("Error PlaceTriggerOrder", err)
 		return newTriggerOrderResponse, err

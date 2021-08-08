@@ -1,7 +1,6 @@
 package ftxtrade
 
 import (
-	"fmt"
 	"math"
 	"time"
 
@@ -18,13 +17,11 @@ func (ft *FtxTrade) checkPosition(client *ftx.FtxClient, market string) {
 
 	openTriggerOrders, err := client.GetOpenTriggerOrders(market)
 	if err != nil {
-		ft.notif.Log("ERROR", "checkPosition GetOpenTriggerOrders", err.Error())
+		ft.notif.Log("ERROR", "checkPosition GetOpenTriggerOrders", market, err.Error())
 		return
 	} else if !openTriggerOrders.Success {
-		ft.notif.Log("ERROR", "checkPosition GetOpenTriggerOrders UNSUFFESSFUL", openTriggerOrders.Result)
+		ft.notif.Log("ERROR", "checkPosition GetOpenTriggerOrders UNSUFFESSFUL", market, openTriggerOrders.Result)
 		return
-	} else {
-
 	}
 
 	triggerOrdersLength := len(openTriggerOrders.Result)
@@ -46,19 +43,18 @@ func (ft *FtxTrade) checkPosition(client *ftx.FtxClient, market string) {
 		return
 	}
 
-	// ft.notif.Log("", "position", position)
 	var slOrder structs.TriggerOrder
-	// var tpOrder structs.TriggerOrder
+	lenghtOfStopOrders := 0
 	for _, triggerOrder := range openTriggerOrders.Result {
 		if triggerOrder.Type == "stop" {
 			slOrder = triggerOrder
+			lenghtOfStopOrders++
 		}
-		// else if triggerOrder.Type == "take_profit" {
-		// 	tpOrder = triggerOrder
-		// }
 	}
 
-	// ft.notif.Log("", "tpOrder", tpOrder)
+	if lenghtOfStopOrders > 1 {
+		ft.notif.Log("ERROR", market, "lenghtOfStopOrders > 1", lenghtOfStopOrders)
+	}
 
 	price, err := ft.appState.ReadLatestPriceForMarket(market)
 
@@ -67,19 +63,29 @@ func (ft *FtxTrade) checkPosition(client *ftx.FtxClient, market string) {
 		return
 	}
 
-	ft.notif.Log("", "latest price", market, price)
-
 	if slOrder.Status != "open" {
 		ft.notif.Log("ERROR", "GetOpenTriggerOrders Open position no SL")
 	}
-	// ft.notif.Log("", "slOrder", slOrder)
+
 	diffAllowed := 0.0001
 	diff := math.Abs((position.AverageOpenPrice / slOrder.TriggerPrice) - 1)
-	fmt.Println("position.AverageOpenPrice", position.AverageOpenPrice)
-	fmt.Println("slOrder.TriggerPrice", slOrder.TriggerPrice, slOrder.Size)
-	fmt.Println("diff", diff)
+
+	// ft.notif.Log("", "latest price", market, price)
+	// fmt.Println("position.AverageOpenPrice", position.AverageOpenPrice)
+	// fmt.Println("slOrder.TriggerPrice", slOrder.TriggerPrice, slOrder.Size)
+	// fmt.Println("diff", diff)
+
 	if position.Size < slOrder.Size && diff > diffAllowed {
-		slOrder, err := client.ModifyTriggerOrder(slOrder.ID, position.Size, position.AverageOpenPrice)
+		newSLtriggerPrice := position.AverageOpenPrice
+		if position.Side == "buy" && newSLtriggerPrice > price {
+			ft.notif.Log("ERROR", "checkPosition buy can't move SL to breakeven SL is higher than entry", newSLtriggerPrice, price)
+			return
+		}
+		if position.Side == "sell" && newSLtriggerPrice < price {
+			ft.notif.Log("ERROR", "checkPosition sell can't move SL to breakeven SL is lower than entry", newSLtriggerPrice, price)
+			return
+		}
+		slOrder, err := client.ModifyTriggerOrder(slOrder.ID, position.Size, newSLtriggerPrice)
 		if err != nil {
 			ft.notif.Log("ERROR", "checkPosition New SL.", err.Error())
 			return
@@ -93,17 +99,14 @@ func (ft *FtxTrade) checkPosition(client *ftx.FtxClient, market string) {
 }
 
 func (ft *FtxTrade) RunPositionsCheck() {
-	time.Sleep(time.Second * 3)
 	key := ft.cfg.FTXKey
 	secret := ft.cfg.FTXSecret
-	// clientBTCD := ftx.New(key, secret, ft.cfg.SubAccBTCD)
+	clientBTCD := ftx.New(key, secret, ft.cfg.SubAccBTCD)
 	clientETHD := ftx.New(key, secret, ft.cfg.SubAccETHD)
 	for {
-		// 0.001
-
-		// ft.checkPosition(clientBTCD, ft.cfg.FutureBTC)
-		// time.Sleep(time.Second)
-		ft.checkPosition(clientETHD, ft.cfg.FutureETH)
 		time.Sleep(time.Second * 15)
+		ft.checkPosition(clientBTCD, ft.cfg.FutureBTC)
+		time.Sleep(time.Second)
+		ft.checkPosition(clientETHD, ft.cfg.FutureETH)
 	}
 }
