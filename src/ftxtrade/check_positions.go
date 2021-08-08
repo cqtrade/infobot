@@ -94,7 +94,7 @@ func (ft *FtxTrade) checkPosition(client *ftx.FtxClient, market string) {
 			ft.notif.Log("ERROR", "checkPosition New SL UNSUCCESSFUL.", slOrder.Result)
 			return
 		}
-		ft.notif.Log("INFO", "checkPosition SUCCESS moving SL.")
+		ft.notif.Log("INFO", "checkPosition SUCCESS moving SL:", slOrder.Result.Side, "@", slOrder.Result.TriggerPrice, "Position:", position.Side, "@", position.AverageOpenPrice)
 	}
 }
 
