@@ -43,3 +43,19 @@ type WritePriceOp struct {
 	Val  ValAt
 	Resp chan bool
 }
+
+type PositionInfo struct {
+	Side        string
+	Stops       int
+	TakeProfits int
+}
+
+type ReadPositionsInfo struct {
+	Resp chan map[string]PositionInfo
+}
+
+type WritePositionsInfo struct {
+	Key          string
+	PositionInfo PositionInfo
+	Resp         chan bool
+}

@@ -13,18 +13,22 @@ import (
 // https://gobyexample.com/stateful-goroutines
 
 type State struct {
-	cfg         config.Config
-	notif       notification.Notification
-	PriceReads  chan types.ReadPriceOp
-	PriceWrites chan types.WritePriceOp
+	cfg                 config.Config
+	notif               notification.Notification
+	PriceReads          chan types.ReadPriceOp
+	PriceWrites         chan types.WritePriceOp
+	PositionsInfoReads  chan types.ReadPositionsInfo
+	PositionsInfoWrites chan types.WritePositionsInfo
 }
 
 func New(cfg config.Config, notif notification.Notification) *State {
 	return &State{
-		cfg:         cfg,
-		notif:       notif,
-		PriceReads:  make(chan types.ReadPriceOp),
-		PriceWrites: make(chan types.WritePriceOp),
+		cfg:                 cfg,
+		notif:               notif,
+		PriceReads:          make(chan types.ReadPriceOp),
+		PriceWrites:         make(chan types.WritePriceOp),
+		PositionsInfoReads:  make(chan types.ReadPositionsInfo),
+		PositionsInfoWrites: make(chan types.WritePositionsInfo),
 	}
 }
 
@@ -93,19 +97,19 @@ func (s *State) ReadLatestPriceForMarket(market string) (float64, error) {
 	return latestPrice, err
 }
 
-// func (s *State) ReadPriceState() {
-// 	time.Sleep(time.Second * 3)
-// 	for {
-
-// 		latestBTCf, _ := s.ReadLatestPriceForMarket(s.cfg.FutureBTC)
-// 		latestBTCs, _ := s.ReadLatestPriceForMarket("BTC/USD")
-// 		latestETHf, _ := s.ReadLatestPriceForMarket(s.cfg.FutureETH)
-// 		latestETHs, _ := s.ReadLatestPriceForMarket("ETH/USD")
-
-// 		fmt.Println("BTC/USD\t\t", fmt.Sprintf("%.2f", latestBTCs), "\tETH/USD\t\t", fmt.Sprintf("%.2f", latestETHs))
-// 		// fmt.Println(s.cfg.FutureBTC, "\t", fmt.Sprintf("%.2f", latestBTCf), "\t", s.cfg.FutureETH, "\t", fmt.Sprintf("%.2f", latestETHf))
-// 		fmt.Println("BTC premium\t\t", fmt.Sprintf("%.2f%%", latestBTCf*100/latestBTCs-100), "\tETH premium\t\t", fmt.Sprintf("%.2f%%", latestETHf*100/latestETHs-100))
-// 		fmt.Println(time.Now().Unix())
-// 		time.Sleep(time.Second * 5)
-// 	}
-// }
+func (s *State) RunPositionsInfo() {
+	positionsInfo := make(map[string]types.PositionInfo)
+	for {
+		select {
+		case r := <-s.PositionsInfoReads:
+			r.Resp <- positionsInfo
+		case w := <-s.PositionsInfoWrites:
+			positionsInfo[w.Key] = types.PositionInfo{
+				Side:        w.PositionInfo.Side,
+				Stops:       w.PositionInfo.Stops,
+				TakeProfits: w.PositionInfo.TakeProfits,
+			}
+			w.Resp <- true
+		}
+	}
+}

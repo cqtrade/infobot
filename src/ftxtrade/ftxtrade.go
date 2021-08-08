@@ -151,10 +151,9 @@ func (ft *FtxTrade) GetOverview(subAcc string) string {
 		totalETHBULLUSD = totalETHBULL * ethBullPrice
 		totalEquityUSD := freeUSD + totalETHBULLUSD
 		if totalEquityUSD == 0 {
-			totalEquityUSD = 0.001
+			totalEquityUSD = 0.00001
 		}
-		return " total: " + fmt.Sprintf("%.2f", totalEquityUSD) + " free USD: " + fmt.Sprintf("%.2f", freeUSD) +
-			" cash: " + fmt.Sprintf("%.2f%%", freeUSD*100/totalEquityUSD)
+		return subAcc + " cash: " + fmt.Sprintf("%.2f%%", freeUSD*100/totalEquityUSD)
 	} else {
 		return "No success getting balances for " + subAcc
 	}

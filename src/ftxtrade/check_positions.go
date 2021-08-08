@@ -6,6 +6,7 @@ import (
 
 	"github.com/cqtrade/infobot/src/ftx"
 	"github.com/cqtrade/infobot/src/ftx/structs"
+	"github.com/cqtrade/infobot/src/types"
 )
 
 func (ft *FtxTrade) checkPosition(client *ftx.FtxClient, market string) {
@@ -25,10 +26,48 @@ func (ft *FtxTrade) checkPosition(client *ftx.FtxClient, market string) {
 	}
 
 	triggerOrdersLength := len(openTriggerOrders.Result)
+	var subAcc string
+	if client.Subaccount == "" {
+		subAcc = "main"
+	} else {
+		subAcc = client.Subaccount
+	}
+	var sidePos string
+	if position.Size > 0 {
+		sidePos = position.Side
+	} else {
+		sidePos = ""
+	}
+	writePositionsInfo := types.WritePositionsInfo{
+		Key: subAcc + "_" + market,
+		PositionInfo: types.PositionInfo{
+			Side:        sidePos,
+			Stops:       0,
+			TakeProfits: 0,
+		},
+		Resp: make(chan bool),
+	}
 	if position.Size == 0 && triggerOrdersLength == 0 {
+		ft.appState.PositionsInfoWrites <- writePositionsInfo
+		<-writePositionsInfo.Resp
 		return
 	}
+	var slOrder structs.TriggerOrder
+	lenghtOfStopOrders := 0
+	lenghtOfTpOrders := 0
+	for _, triggerOrder := range openTriggerOrders.Result {
+		if triggerOrder.Type == "stop" {
+			slOrder = triggerOrder
+			lenghtOfStopOrders++
+		} else if triggerOrder.Type == "take_profit" {
+			lenghtOfTpOrders++
+		}
+	}
 
+	writePositionsInfo.PositionInfo.Stops = lenghtOfStopOrders
+	writePositionsInfo.PositionInfo.TakeProfits = lenghtOfTpOrders
+	ft.appState.PositionsInfoWrites <- writePositionsInfo
+	<-writePositionsInfo.Resp
 	if position.Size == 0 && triggerOrdersLength > 0 {
 		ft.notif.Log("INFO", "checkPosition", "no position, open trigger orders. cancel all open orders.")
 		res, err := client.CancelAllOrders()
@@ -41,15 +80,6 @@ func (ft *FtxTrade) checkPosition(client *ftx.FtxClient, market string) {
 			return
 		}
 		return
-	}
-
-	var slOrder structs.TriggerOrder
-	lenghtOfStopOrders := 0
-	for _, triggerOrder := range openTriggerOrders.Result {
-		if triggerOrder.Type == "stop" {
-			slOrder = triggerOrder
-			lenghtOfStopOrders++
-		}
 	}
 
 	if lenghtOfStopOrders > 1 {
@@ -104,7 +134,7 @@ func (ft *FtxTrade) RunPositionsCheck() {
 	clientBTCD := ftx.New(key, secret, ft.cfg.SubAccBTCD)
 	clientETHD := ftx.New(key, secret, ft.cfg.SubAccETHD)
 	for {
-		time.Sleep(time.Second * 15)
+		time.Sleep(time.Second * 10)
 		ft.checkPosition(clientBTCD, ft.cfg.FutureBTC)
 		time.Sleep(time.Second)
 		ft.checkPosition(clientETHD, ft.cfg.FutureETH)
