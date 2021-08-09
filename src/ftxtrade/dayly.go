@@ -78,7 +78,7 @@ func (ft *FtxTrade) TradeLev(msg types.JSONMessageBody) {
 	}
 
 	if position.Size != 0 && (msg.Signal == 1 || msg.Signal == -1) {
-		ft.notif.Log("ERROR", "TradeLev already in position, no entry. Abort.", msg.Signal)
+		ft.notif.Log("INFO", "TradeLev already in position, no entry. Abort.", msg.Signal)
 		return
 	}
 
@@ -108,7 +108,7 @@ func (ft *FtxTrade) TradeLev(msg types.JSONMessageBody) {
 	equity := RoundDown(sBalanceUSD.Free/price, 4)
 	ft.notif.Log("", "equity", fmt.Sprintf("%.4f", equity))
 	if equity < 0.0002 {
-		ft.notif.Log("ERROR", "TradeLev Equity less than 0.0002. Abort.", equity)
+		ft.notif.Log("INFO", "TradeLev Equity less than 0.0002. Abort.", equity)
 		return
 	}
 
@@ -117,7 +117,7 @@ func (ft *FtxTrade) TradeLev(msg types.JSONMessageBody) {
 	positionSize := RoundDown(equity*riskRatio, 4)
 	ft.notif.Log("", "Position size", market, fmt.Sprintf("%.4f", positionSize))
 	if positionSize < 0.0001 {
-		ft.notif.Log("ERROR", "TradeLev positionSize less than 0.0001. Abort.", fmt.Sprintf("%.6f", positionSize))
+		ft.notif.Log("INFO", "TradeLev positionSize less than 0.0001. Abort.", fmt.Sprintf("%.6f", positionSize))
 		return
 	}
 
