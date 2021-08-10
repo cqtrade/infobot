@@ -15,7 +15,7 @@ var (
 	notif        notification.Notification = *notification.New(cfg)
 	appState     state.State               = *state.New(cfg, notif)
 	ft           ftxtrade.FtxTrade         = *ftxtrade.New(cfg, notif, appState)
-	ftws         ftxwebsocket.FtxWebSocket = *ftxwebsocket.New(cfg, appState)
+	ftws         ftxwebsocket.FtxWebSocket = *ftxwebsocket.New(cfg, notif, appState)
 	tvController tvcontroller.TvController = *tvcontroller.New(notif, ft)
 	webServer    server.Server             = *server.New(cfg, tvController)
 )
