@@ -33,13 +33,13 @@ func (ftws *FtxWebSocket) RunWebSocket() {
 	defer cancel()
 	ch := make(chan realtime.Response)
 	go realtime.Connect(ctx, ch, []string{"ticker"}, []string{"BTC/USD", "ETH/USD", ftws.cfg.FutureBTC, ftws.cfg.FutureETH}, nil)
-	timeAfter := time.After(30 * time.Second)
+	timeAfter := time.After(15 * time.Second)
 	for {
 		select {
 		case v := <-ch:
 			switch v.Type {
 			case realtime.TICKER:
-				timeAfter = time.After(30 * time.Second)
+				timeAfter = time.After(15 * time.Second)
 				write := types.WritePriceOp{
 					Key: v.Symbol,
 					Val: types.ValAt{
