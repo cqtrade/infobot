@@ -1,6 +1,9 @@
 package tvcontroller
 
 import (
+	"strings"
+	"time"
+
 	"github.com/cqtrade/infobot/src/ftxtrade"
 	"github.com/cqtrade/infobot/src/notification"
 	"github.com/cqtrade/infobot/src/types"
@@ -44,10 +47,21 @@ func (tvc *TvController) PostFlash(ctx *gin.Context) {
 
 	switch message.Signal {
 	case 1001:
-		go tvc.ftxTrade.BuyEthBull("test1")
+		go func() {
+			tvc.ftxTrade.BuyCoinBull("ethbull", "ETHBULL/USD")
+			time.Sleep(time.Second)
+			tvc.ftxTrade.BuyCoinBull("bull", "BULL/USD")
+		}()
 		return
 	case -2002:
-		go tvc.ftxTrade.TpEthBull("test1")
+		go func(ticker string) {
+			t := strings.ToUpper(ticker)
+			if strings.HasPrefix(t, "BTC") || strings.HasPrefix(t, "XBT") {
+				tvc.ftxTrade.TpCoinBull("bull", "BULL/USD", "BULL")
+			} else if strings.HasPrefix(t, "ETH") {
+				tvc.ftxTrade.TpCoinBull("ethbull", "ETHBULL/USD", "ETHBULL")
+			}
+		}(message.Ticker)
 		return
 	case 888:
 		go tvc.ftxTrade.ArbStart("arb1", "BTC")
@@ -57,6 +71,8 @@ func (tvc *TvController) PostFlash(ctx *gin.Context) {
 		return
 	case 1, -1, 2, -2:
 		go tvc.ftxTrade.TradeLev(message)
+		// todo low equity high risk accounts?
+		// exit signals for spot from here
 		return
 	default:
 		go tvc.notif.Log("ERROR", "unknown signal", message)

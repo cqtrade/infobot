@@ -27,13 +27,13 @@ func New(cfg config.Config, notif notification.Notification, st state.State) *Ft
 }
 
 func (ftws *FtxWebSocket) RunWebSocket() {
-	time.Sleep(5 * time.Second)
+	time.Sleep(3 * time.Second)
 	ftws.notif.Log("INFO", "ws START")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	ch := make(chan realtime.Response)
 	go realtime.Connect(ctx, ch, []string{"ticker"}, []string{"BTC/USD", "ETH/USD", ftws.cfg.FutureBTC, ftws.cfg.FutureETH}, nil)
-	timeAfter := time.After(15 * time.Second)
+	timeAfter := time.After(10 * time.Second)
 	for {
 		select {
 		case v := <-ch:

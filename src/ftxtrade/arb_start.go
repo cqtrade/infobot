@@ -27,9 +27,10 @@ func (ft *FtxTrade) ArbStart(subAcc string, name string) {
 		fmt.Println("Error getting balance", err)
 		return
 	}
-	marketPrice, err := ft.GetLastPriceForMarket(spot, client)
+
+	marketPrice, err := ft.appState.ReadLatestPriceForMarket(spot)
 	if err != nil {
-		fmt.Println("Error getting market price", err)
+		ft.notif.Log("ERROR", "ArbStart ReadLatestPriceForMarket. Abort.", err.Error())
 		return
 	}
 	// 0.00110000

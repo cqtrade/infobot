@@ -49,8 +49,6 @@ func (ft *FtxTrade) TradeLev(msg types.JSONMessageBody) {
 		return
 	}
 
-	ft.notif.Log("", "market", market, "subaccount", subAcc)
-
 	if msg.Risk == 0 || msg.AtrTP == 0 || msg.AtrSL == 0 {
 		ft.notif.Log("ERROR", "incorrect data - missing risk or tp or sl. Abort.", msg)
 		return

@@ -44,21 +44,30 @@ func Round(val float64, precision int) float64 {
 	return math.Round(val*(math.Pow10(precision))) / math.Pow10(precision)
 }
 
-func (ft *FtxTrade) TpEthBull(subAcc string) {
+func (ft *FtxTrade) TpCoinBull(subAcc string, market string, coin string) {
 	fractionPerc := 0.2
-	// get ETHBULL balance
+
 	key := ft.cfg.FTXKey
 	secret := ft.cfg.FTXSecret
 	client := ftx.New(key, secret, subAcc)
-	balanceETHBULL, _ := ft.CheckFreeBalanceETHBULL(subAcc, client)
-	market := "ETHBULL/USD"
-	marketPrice, _ := ft.GetLastPriceForMarket(market, client)
-	// calculate value
-	valueUSD := balanceETHBULL * marketPrice
-	size := math.Round((balanceETHBULL*fractionPerc)*10000) / 10000
-	// calculate 10% or 20% of value
+
+	balanceCoin, err := ft.CheckSpotBalance(client, subAcc, coin)
+	if err != nil {
+		ft.notif.Log("ERROR", coin, "TpCoinBull CheckSpotBalance. Abort.", err.Error())
+		return
+	}
+	coinFree := balanceCoin.Free
+	marketPrice, err := ft.appState.ReadLatestPriceForMarket(market)
+	if err != nil {
+		ft.notif.Log("ERROR", market, "TpCoinBull ReadLatestPriceForMarket. Abort.", err.Error())
+		return
+	}
+
+	valueUSD := coinFree * marketPrice
+	size := math.Round((coinFree*fractionPerc)*10000) / 10000
+
 	fractionUSD := valueUSD * fractionPerc
-	if fractionUSD > 4 {
+	if fractionUSD >= 4 {
 		_, err := client.PlaceMarketOrder(market, "sell", "market", size)
 		if err != nil {
 			fmt.Println("ERROR with Market BUY order ", err)
@@ -68,62 +77,63 @@ func (ft *FtxTrade) TpEthBull(subAcc string) {
 	} else {
 		fmt.Println("Fraction value ", fractionUSD)
 	}
-	// if it is > 10 sell market or add trailing stop
+	// TODO if it is > 10 sell market or add trailing stop
 }
 
-func (ft *FtxTrade) BuyEthBull(subAcc string) {
+func (ft *FtxTrade) BuyCoinBull(subAcc string, market string) {
 	key := ft.cfg.FTXKey
 	secret := ft.cfg.FTXSecret
 	client := ftx.New(key, secret, subAcc)
-	equity, _ := ft.CheckBalanceUSD(subAcc, client)
-	market := "ETHBULL/USD"
+	balanceCoinUSD, err := ft.CheckSpotBalance(client, subAcc, "USD")
+	if err != nil {
+		ft.notif.Log("ERROR", "USD", "BuyCoinBull CheckSpotBalance. Abort.", err.Error())
+		return
+	}
+	equityUSD := balanceCoinUSD.Free
 	positionSize := ft.cfg.PositionSize
 	profitPercentage := ft.cfg.ProfitPercentage
-	if equity > positionSize {
-		marketPrice, _ := ft.GetLastPriceForMarket(market, client)
-		if marketPrice <= 0.0 {
-			fmt.Println(market, " marketPrice price not greater than zero: ", marketPrice)
+	if equityUSD > positionSize {
+		marketPrice, err := ft.appState.ReadLatestPriceForMarket(market)
+		if err != nil {
+			ft.notif.Log("ERROR", "BuyEthBull ReadLatestPriceForMarket. Abort.", err.Error())
 			return
 		}
 
+		if marketPrice <= 0.0 {
+			ft.notif.Log("ERROR", "BuyEthBull marketPrice price not greater than zero: ", marketPrice, market)
+			return
+		}
+
+		// TODO use different rounding here?
 		size := math.Round((positionSize/marketPrice)*10000) / 10000
-		fmt.Println("Buy market\t", market, "\t", size)
+
 		orderMarket, err := client.PlaceMarketOrder(market, "buy", "market", size)
 		if err != nil {
-			fmt.Println("ERROR with Market BUY order ", err)
+			ft.notif.Log("ERROR", "BuyEthBull Market BUY order. Abort.", err.Error())
+			return
 		}
-		fmt.Println(orderMarket)
+
 		if orderMarket.Success == true {
 			sizeTP := math.Round((size/2)*10000) / 10000 // sell 50%
-			marketPrice, _ := ft.GetLastPriceForMarket(market, client)
-			priceTP := math.Round((marketPrice+marketPrice*profitPercentage)*10) / 10
-			fmt.Println("TP size: ", sizeTP, " price: ", priceTP)
-			orderTP, err := client.PlaceOrder(market, "sell", priceTP, "limit", sizeTP, false, false, false)
-			fmt.Println(orderTP)
+			marketPrice, err := ft.appState.ReadLatestPriceForMarket(market)
 			if err != nil {
-				fmt.Println("ERROR with TP order ", err)
+				ft.notif.Log("ERROR", "BuyEthBull ReadLatestPriceForMarket. Abort.", err.Error())
+				return
+			}
+
+			priceTP := math.Round((marketPrice+marketPrice*profitPercentage)*10) / 10
+
+			orderTP, err := client.PlaceOrder(market, "sell", priceTP, "limit", sizeTP, false, false, false)
+
+			if err != nil {
+				ft.notif.Log("ERROR", "BuyEthBull TP order. Abort.", err.Error())
 			} else if orderTP.Success {
-				fmt.Println("BUY FLOW SUCCESS")
+				fmt.Println("BUY FLOW SUCCESS", market)
 			}
 		} else {
-			fmt.Println("FAILED market order, ", orderMarket)
+			ft.notif.Log("ERROR", "BuyEthBull market order.", orderMarket)
 		}
 	}
-}
-
-func (ft *FtxTrade) GetLastPriceForMarket(market string, client *ftx.FtxClient) (float64, error) {
-	marketPrice := 0.0
-	candles, err := client.GetHistoricalPriceLatest(market, 15, 1)
-	if err != nil {
-		return marketPrice, err
-	}
-
-	if len(candles.Result) > 0 {
-		candle := candles.Result[0]
-		marketPrice = candle.Close
-	}
-
-	return marketPrice, nil
 }
 
 // https://yourbasic.org/golang/convert-string-to-float/
@@ -134,7 +144,7 @@ func (ft *FtxTrade) GetOverview(subAcc string) string {
 	sBalances, err := client.GetSubaccountBalances(subAcc)
 	msg := subAcc
 	if err != nil {
-		return msg + " error receiveing balnces: " + err.Error()
+		return msg + " error receiveing balances: " + err.Error()
 	}
 	freeUSD := 0.0
 	totalETHBULL := 0.0
@@ -147,7 +157,13 @@ func (ft *FtxTrade) GetOverview(subAcc string) string {
 				totalETHBULL = balance.Total
 			}
 		}
-		ethBullPrice, _ := ft.GetLastPriceForMarket("ETHBULL/USD", client)
+
+		ethBullPrice, err := ft.appState.ReadLatestPriceForMarket("ETHBULL/USD")
+		if err != nil {
+			ft.notif.Log("ERROR", "ArbStart ReadLatestPriceForMarket. Abort.", err.Error())
+			return ""
+		}
+
 		totalETHBULLUSD = totalETHBULL * ethBullPrice
 		totalEquityUSD := freeUSD + totalETHBULLUSD
 		if totalEquityUSD == 0 {

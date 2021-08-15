@@ -26,24 +26,3 @@ func (ft *FtxTrade) CheckFuturePosition(client *ftx.FtxClient, future string) (s
 	}
 	return position, err
 }
-
-func (ft *FtxTrade) CheckSpotBalance(client *ftx.FtxClient, subAcc string, spot string) (structs.SubaccountBalance, error) {
-	var balance structs.SubaccountBalance
-	sBalances, err := client.GetSubaccountBalances(subAcc)
-	if err != nil {
-		return balance, err
-	}
-
-	if !sBalances.Success {
-		return balance, errors.New("No Success CheckSpotBalance")
-	}
-
-	for _, currBalance := range sBalances.Result {
-		if currBalance.Coin == spot {
-			balance = currBalance
-			return balance, nil
-		}
-	}
-
-	return balance, nil
-}

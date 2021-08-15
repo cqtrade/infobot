@@ -11,7 +11,7 @@ func (ft *FtxTrade) RunHealthPing() {
 	if ft.cfg.HealthLogEnabled {
 		for t := range time.Tick(time.Second) {
 			if t.Second() == 55 {
-				message := t.Format("Jan 02 15:04") + " " + ft.GetOverview("test1")
+				message := t.Format("Jan 02 15:04")
 
 				read := types.ReadPositionsInfo{
 					Resp: make(chan map[string]types.PositionInfo)}

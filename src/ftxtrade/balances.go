@@ -1,63 +1,29 @@
 package ftxtrade
 
 import (
-	"fmt"
+	"errors"
 
 	"github.com/cqtrade/infobot/src/ftx"
+	"github.com/cqtrade/infobot/src/ftx/structs"
 )
 
-func (ft *FtxTrade) CheckBalanceUSD(subAcc string, client *ftx.FtxClient) (float64, error) {
+func (ft *FtxTrade) CheckSpotBalance(client *ftx.FtxClient, subAcc string, spot string) (structs.SubaccountBalance, error) {
+	var balance structs.SubaccountBalance
 	sBalances, err := client.GetSubaccountBalances(subAcc)
-	equity := 0.0
 	if err != nil {
-		return equity, err
+		return balance, err
 	}
 
-	if sBalances.Success {
-		for _, balance := range sBalances.Result {
-			if balance.Coin == "USD" {
-				equity = balance.Free
-			}
-			fmt.Println("Coin\t", balance.Coin, "\tfree:\t", balance.Free, "\ttotal:\t", balance.Total)
+	if !sBalances.Success {
+		return balance, errors.New("No Success CheckSpotBalance")
+	}
+
+	for _, currBalance := range sBalances.Result {
+		if currBalance.Coin == spot {
+			balance = currBalance
+			return balance, nil
 		}
 	}
 
-	return equity, nil
-}
-
-func (ft *FtxTrade) CheckFreeBalanceETHBULL(subAcc string, client *ftx.FtxClient) (float64, error) {
-	sBalances, err := client.GetSubaccountBalances(subAcc)
-	equity := 0.0
-	if err != nil {
-		return equity, err
-	}
-
-	if sBalances.Success {
-		for _, balance := range sBalances.Result {
-			if balance.Coin == "ETHBULL" {
-				equity = balance.Free
-			}
-			fmt.Println("Coin\t", balance.Coin, "\tfree:\t", balance.Free, "\ttotal:\t", balance.Total)
-		}
-	}
-
-	return equity, nil
-}
-
-func (ft *FtxTrade) CheckFreeBalanceBTC(subAcc string, client *ftx.FtxClient) (float64, error) {
-	sBalances, err := client.GetSubaccountBalances(subAcc)
-	equity := 0.0
-	if err != nil {
-		return equity, err
-	}
-
-	if sBalances.Success {
-		for _, balance := range sBalances.Result {
-			if balance.Coin == "BTC" {
-				equity = balance.Free
-			}
-		}
-	}
-
-	return equity, nil
+	return balance, nil
 }
