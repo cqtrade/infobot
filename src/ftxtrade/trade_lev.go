@@ -10,6 +10,7 @@ import (
 	"github.com/cqtrade/infobot/src/types"
 )
 
+// closing position should be easier, by position ID and delete method maybe?
 func (ft *FtxTrade) closePosition(client *ftx.FtxClient, market string, position structs.Position) {
 	var side string
 	if position.Side == "buy" {
