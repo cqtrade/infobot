@@ -28,7 +28,7 @@ func New(cfg config.Config, notif notification.Notification, st state.State) *Ft
 
 func (ftws *FtxWebSocket) RunWebSocket() {
 	time.Sleep(3 * time.Second)
-	ftws.notif.Log("INFO", "ws START")
+	ftws.notif.Log("DEBUG", "ws START")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	ch := make(chan realtime.Response)
@@ -56,12 +56,12 @@ func (ftws *FtxWebSocket) RunWebSocket() {
 				fmt.Println(fmt.Sprintf("Default %v", v))
 			}
 		case <-timeAfter:
-			ftws.notif.Log("ERROR", "ws timeout")
+			ftws.notif.Log("WARNING", "ws timeout")
 			go ftws.RunWebSocket()
 			return
 
 		case <-ctx.Done():
-			ftws.notif.Log("ERROR", "ws ctx done")
+			ftws.notif.Log("WARNING", "ws ctx done")
 			go ftws.RunWebSocket()
 			return
 		}

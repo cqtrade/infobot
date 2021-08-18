@@ -72,7 +72,7 @@ func (ft *FtxTrade) TpCoinBull(subAcc string, market string, coin string) {
 		if err != nil {
 			fmt.Println("ERROR with Market BUY order ", err)
 		} else {
-			fmt.Println("TP SELL FLOW SUCCESS ")
+			ft.notif.Log("INFO", "TpCoinBull FLOW SUCCESS", market)
 		}
 	} else {
 		fmt.Println("Fraction value ", fractionUSD)
@@ -86,7 +86,7 @@ func (ft *FtxTrade) BuyCoinBull(subAcc string, market string) {
 	client := ftx.New(key, secret, subAcc)
 	balanceCoinUSD, err := ft.CheckSpotBalance(client, subAcc, "USD")
 	if err != nil {
-		ft.notif.Log("ERROR", "USD", "BuyCoinBull CheckSpotBalance. Abort.", err.Error())
+		ft.notif.Log("ERROR", "USD", "BuyCoinBull CheckSpotBalance. Abort.", market, err.Error())
 		return
 	}
 	equityUSD := balanceCoinUSD.Free
@@ -95,12 +95,12 @@ func (ft *FtxTrade) BuyCoinBull(subAcc string, market string) {
 	if equityUSD > positionSize {
 		marketPrice, err := ft.appState.ReadLatestPriceForMarket(market)
 		if err != nil {
-			ft.notif.Log("ERROR", "BuyEthBull ReadLatestPriceForMarket. Abort.", err.Error())
+			ft.notif.Log("ERROR", "BuyCoinBull ReadLatestPriceForMarket. Abort.", market, err.Error())
 			return
 		}
 
 		if marketPrice <= 0.0 {
-			ft.notif.Log("ERROR", "BuyEthBull marketPrice price not greater than zero: ", marketPrice, market)
+			ft.notif.Log("ERROR", "BuyCoinBull marketPrice price not greater than zero: ", marketPrice, market)
 			return
 		}
 
@@ -109,7 +109,7 @@ func (ft *FtxTrade) BuyCoinBull(subAcc string, market string) {
 
 		orderMarket, err := client.PlaceMarketOrder(market, "buy", "market", size)
 		if err != nil {
-			ft.notif.Log("ERROR", "BuyEthBull Market BUY order. Abort.", err.Error())
+			ft.notif.Log("ERROR", "BuyCoinBull Market BUY order. Abort.", market, err.Error())
 			return
 		}
 
@@ -117,7 +117,7 @@ func (ft *FtxTrade) BuyCoinBull(subAcc string, market string) {
 			sizeTP := math.Round((size/2)*10000) / 10000 // sell 50%
 			marketPrice, err := ft.appState.ReadLatestPriceForMarket(market)
 			if err != nil {
-				ft.notif.Log("ERROR", "BuyEthBull ReadLatestPriceForMarket. Abort.", err.Error())
+				ft.notif.Log("ERROR", "BuyCoinBull ReadLatestPriceForMarket. Abort.", market, err.Error())
 				return
 			}
 
@@ -126,12 +126,12 @@ func (ft *FtxTrade) BuyCoinBull(subAcc string, market string) {
 			orderTP, err := client.PlaceOrder(market, "sell", priceTP, "limit", sizeTP, false, false, false)
 
 			if err != nil {
-				ft.notif.Log("ERROR", "BuyEthBull TP order. Abort.", err.Error())
+				ft.notif.Log("ERROR", "BuyCoinBull TP order. Abort.", market, err.Error())
 			} else if orderTP.Success {
-				fmt.Println("BUY FLOW SUCCESS", market)
+				ft.notif.Log("INFO", "BuyCoinBull FLOW SUCCESS", market)
 			}
 		} else {
-			ft.notif.Log("ERROR", "BuyEthBull market order.", orderMarket)
+			ft.notif.Log("ERROR", "BuyCoinBull market order.", orderMarket, market)
 		}
 	}
 }

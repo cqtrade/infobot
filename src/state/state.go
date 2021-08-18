@@ -59,24 +59,24 @@ func (s *State) ReadLatestPriceForMarket(market string) (float64, error) {
 	shouldRequestFromRest := false
 	if priceAt.Price == 0 {
 		shouldRequestFromRest = true
-		s.notif.Log("ERROR", "ReadLatestPriceForMarket - price is 0 get new reading via rest")
+		s.notif.Log("WARNING", "ReadLatestPriceForMarket - price is 0 get new reading via rest")
 	}
 
 	if priceAt.At == 0 {
 		shouldRequestFromRest = true
-		s.notif.Log("ERROR", "ReadLatestPriceForMarket - price is 0 get new reading via rest")
+		s.notif.Log("WARNING", "ReadLatestPriceForMarket - price is 0 get new reading via rest")
 	}
 
 	elapsed := time.Now().Unix() - priceAt.At
 
 	if elapsed > 5 {
 		shouldRequestFromRest = true
-		s.notif.Log("ERROR", "ReadLatestPriceForMarket - Price older than 5 secs", fmt.Sprintf("%d", time.Now().Unix()-priceAt.At))
+		s.notif.Log("WARNING", "ReadLatestPriceForMarket - Price older than 5 secs", fmt.Sprintf("%d", time.Now().Unix()-priceAt.At))
 	}
 
 	latestPrice = priceAt.Price
 	if shouldRequestFromRest {
-		s.notif.Log("INFO", "ReadLatestPriceForMarket - request from REST API")
+		s.notif.Log("DEBUG", "ReadLatestPriceForMarket - request from REST API")
 		key := s.cfg.FTXKey
 		secret := s.cfg.FTXSecret
 		client := ftx.New(key, secret, "")
