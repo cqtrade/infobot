@@ -85,7 +85,7 @@ func (tvc *TvController) PostFlash(ctx *gin.Context) {
 				tvc.ftxTrade.BuyCoinBull("ethbull", "ETHBULL/USD")
 				time.Sleep(time.Second)
 				tvc.ftxTrade.BuyCoinBull("bull", "BULL/USD")
-			} else if message.Signal == 1 { // exit_buy 2
+			} else if message.Signal == 2 { // exit_buy 2
 				if strings.HasPrefix(t, "BTC") || strings.HasPrefix(t, "XBT") {
 					time.Sleep(time.Second)
 					tvc.ftxTrade.TpCoinBull("bull", "BULL/USD", "BULL")
