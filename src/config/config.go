@@ -21,6 +21,8 @@ type Config struct {
 	FutureETH            string
 	SubAccBTCD           string
 	SubAccETHD           string
+	SubAccBTCDC          string
+	SubAccETHDC          string
 }
 
 func New() *Config {
@@ -44,5 +46,7 @@ func New() *Config {
 		FutureETH:            viper.GetString("FUTURE_ETH"),
 		SubAccBTCD:           viper.GetString("SUBA_BTCD"),
 		SubAccETHD:           viper.GetString("SUBA_ETHD"),
+		SubAccBTCDC:          viper.GetString("SUBA_BTCDC"),
+		SubAccETHDC:          viper.GetString("SUBA_ETHDC"),
 	}
 }

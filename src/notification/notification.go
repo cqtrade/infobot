@@ -115,9 +115,9 @@ func (ds *Notification) SendFlashMessage(msgJSON types.JSONMessageBody) {
 
 	switch s := msgJSON.Signal; s {
 	case 1001:
-		m += " Flash BUY"
+		m += " BUY CRYPTO, partial"
 	case -2002:
-		m += " take profit sell"
+		m += " Take partial profit, sell crypto"
 	case 1:
 		m += " Long"
 	case 2:
@@ -172,6 +172,7 @@ func (ds *Notification) Log(level string, a ...interface{}) {
 	message := strings.Join(s[:], " ")
 
 	if l == "INFO" || l == "ERROR" {
+		fmt.Println(message)
 		write := types.WriteLogMessage{
 			Val:  types.LogMessage{Message: message, Channel: ds.cfg.DiscordChLogs},
 			Resp: make(chan bool)}

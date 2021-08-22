@@ -34,24 +34,93 @@ func (ft *FtxTrade) closePosition(client *ftx.FtxClient, market string, position
 	}
 }
 
-func (ft *FtxTrade) TradeLev(msg types.JSONMessageBody) {
+func (ft *FtxTrade) swapEquity(
+	side string,
+	balanceUSD structs.SubaccountBalance,
+	balanceCoin structs.SubaccountBalance,
+	spotPrice float64,
+	client *ftx.FtxClient,
+	spotMarket string,
+	coinUSD float64,
+) {
+	if side == "buy" && balanceUSD.Free > 10 {
+		coinToBuySize := RoundDown(0.97*(balanceUSD.Free/spotPrice), 4)
+		ft.notif.Log("", "coinToBuySize", coinToBuySize)
+		orderMarketSpot, err := client.PlaceMarketOrder(spotMarket, "buy", "market", coinToBuySize)
+		if err != nil {
+			ft.notif.Log("ERROR", "TradeLevCrypto flip cash to crypto", err.Error())
+			return
+		}
+		if orderMarketSpot.Success {
+			ft.notif.Log("INFO", "TradeLevCrypto flip cash to crypto SUCCESS")
+		} else {
+			ft.notif.Log("ERROR", "TradeLevCrypto flip cash to crypto unsuccessful", orderMarketSpot.Result)
+		}
+	} else if side == "buy" && balanceUSD.Free <= 4 {
+		ft.notif.Log("INFO", "TradeLevCrypto no flip cash to crypto USD", balanceUSD.Free)
+	} else if side == "sell" && coinUSD > 10 {
+		orderMarketSpot, err := client.PlaceMarketOrder(spotMarket, "sell", "market", balanceCoin.Free)
+		if err != nil {
+			ft.notif.Log("ERROR", "TradeLevCrypto flip cash to crypto", err.Error())
+			return
+		}
+		if orderMarketSpot.Success {
+			ft.notif.Log("INFO", "TradeLevCrypto flip crypto to cash SUCCESS")
+		} else {
+			ft.notif.Log("ERROR", "TradeLevCrypto flip crypto to cash unsuccessful", orderMarketSpot.Result)
+		}
+	} else if side == "sell" && coinUSD <= 4 {
+		ft.notif.Log("INFO", "TradeLevCrypto no flip crypto to cash balanceCoin Free", balanceCoin.Free)
+	}
+}
+
+func (ft *FtxTrade) TradeLevCrypto(
+	msg types.JSONMessageBody,
+	risk float64,
+	side string,
+	sideOpposite string,
+	subAccType string,
+) {
 	ft.notif.Log("", msg)
+	if risk <= 0.1 || msg.AtrTP <= 0 || msg.AtrSL <= 0 {
+		ft.notif.Log("ERROR", "invalid risk|tp|sl. Abort.", msg)
+		return
+	}
+	var shouldSwapEquity bool
 	var market string
 	var subAcc string
+	var spotMarket string
+	var coin string
+
+	if subAccType == "dc" {
+		shouldSwapEquity = true
+	} else if subAccType == "d" {
+		shouldSwapEquity = false
+	} else {
+		ft.notif.Log("ERROR", "subAccType not in dc|d. Abort.", subAccType)
+		return
+	}
 	ticker := strings.ToUpper(msg.Ticker)
 	if strings.HasPrefix(ticker, "BTC") || strings.HasPrefix(ticker, "XBT") {
 		market = ft.cfg.FutureBTC
-		subAcc = ft.cfg.SubAccBTCD
+		if subAccType == "dc" {
+			subAcc = ft.cfg.SubAccBTCDC
+		} else if subAccType == "d" {
+			subAcc = ft.cfg.SubAccBTCD
+		}
+		spotMarket = "BTC/USD"
+		coin = "BTC"
 	} else if strings.HasPrefix(ticker, "ETH") {
 		market = ft.cfg.FutureETH
-		subAcc = ft.cfg.SubAccETHD
+		if subAccType == "dc" {
+			subAcc = ft.cfg.SubAccETHDC
+		} else if subAccType == "d" {
+			subAcc = ft.cfg.SubAccETHD
+		}
+		spotMarket = "ETH/USD"
+		coin = "ETH"
 	} else {
 		ft.notif.Log("ERROR", "unknown ticker. Abort.", msg.Ticker)
-		return
-	}
-
-	if msg.Risk == 0 || msg.AtrTP == 0 || msg.AtrSL == 0 {
-		ft.notif.Log("ERROR", "incorrect data - missing risk or tp or sl. Abort.", msg)
 		return
 	}
 
@@ -59,133 +128,113 @@ func (ft *FtxTrade) TradeLev(msg types.JSONMessageBody) {
 	secret := ft.cfg.FTXSecret
 	client := ftx.New(key, secret, subAcc)
 
+	balanceUSD, err := ft.CheckSpotBalance(client, subAcc, "USD")
+	if err != nil {
+		ft.notif.Log("ERROR", "TradeLevCrypto get USD balance", err.Error())
+		return
+	}
+
+	balanceCoin, err := ft.CheckSpotBalance(client, subAcc, coin)
+	if err != nil {
+		ft.notif.Log("ERROR", "TradeLevCrypto get Coin balance", err.Error())
+		return
+	}
+
+	spotPrice, err := ft.appState.ReadLatestPriceForMarket(spotMarket)
+	coinUSD := balanceCoin.Free * spotPrice
+	equity := balanceUSD.Free + coinUSD
+	ft.notif.Log("", "equity", equity)
 	position, _ := ft.CheckFuturePosition(client, market)
 
-	if position.Size == 0 && (msg.Signal == 2 || msg.Signal == -2) {
+	if position.Size == 0 && shouldSwapEquity {
+		ft.swapEquity(
+			side,
+			balanceUSD,
+			balanceCoin,
+			spotPrice,
+			client,
+			spotMarket,
+			coinUSD,
+		)
+	}
+
+	if position.Size == 0 && (side == "exitBuy" || side == "exitSell") {
 		ft.notif.Log("INFO", "TradeLev No position nothing to exit. Abort.", msg.Signal)
 		return
 	}
 
-	if position.Size != 0 && position.Side == "buy" && (msg.Signal == 2 || msg.Signal == -1) { // exit long
+	if position.Size != 0 && position.Side == "buy" && (side == "exitBuy" || side == "sell") { // exit long
 		ft.closePosition(client, market, position)
 		return
 	}
 
-	if position.Size != 0 && position.Side == "sell" && (msg.Signal == -2 || msg.Signal == 1) { // exit short
+	if position.Size != 0 && position.Side == "sell" && (side == "exitSell" || side == "buy") { // exit short
 		ft.closePosition(client, market, position)
 		return
 	}
 
-	if position.Size != 0 && (msg.Signal == 1 || msg.Signal == -1) {
-		ft.notif.Log("INFO", "TradeLev already in position, no entry. Abort.", msg.Signal)
+	if position.Size != 0 && (side == "buy" || side == "sell") {
+		ft.notif.Log("INFO", "TradeLev already in position, no entry. Abort.", side, msg.Signal)
 		return
 	}
 
-	// create new position logic, for now equity USD based
-	sBalanceUSD, err := ft.CheckSpotBalance(client, subAcc, "USD")
+	time.Sleep(time.Second)
+	spotPrice, err = ft.appState.ReadLatestPriceForMarket(spotMarket)
 
-	if err != nil {
-		fmt.Println("Error getting balance", err)
-		ft.notif.Log("ERROR", "TradeLev CheckSpotBalance. Abort.", err.Error())
-		return
-	}
-
-	if sBalanceUSD.Free < 10 {
-		ft.notif.Log("ERROR", "TradeLev Free USD less than 10. Abort.", sBalanceUSD)
-		return
-	}
-
-	price, err := ft.appState.ReadLatestPriceForMarket(market)
-
-	if err != nil {
-		ft.notif.Log("ERROR", "TradeLev ReadLatestPriceForMarket. Abort.", err.Error())
-		return
-	}
-
-	ft.notif.Log("", market, price)
-
-	equity := RoundDown(sBalanceUSD.Free/price, 4)
-	ft.notif.Log("", "equity", fmt.Sprintf("%.4f", equity))
-	if equity < 0.0002 {
-		ft.notif.Log("INFO", "TradeLev Equity less than 0.0002. Abort.", equity)
-		return
-	}
-
-	atrRiskPerc := msg.AtrSL * 100 / price
-	riskRatio := msg.Risk / atrRiskPerc
-	positionSize := RoundDown(equity*riskRatio, 4)
-	ft.notif.Log("", "Position size", market, fmt.Sprintf("%.4f", positionSize))
+	atrRiskPerc := msg.AtrSL * 100 / spotPrice
+	riskRatio := risk / atrRiskPerc
+	positionSize := RoundDown((equity*riskRatio)/spotPrice, 4)
+	ft.notif.Log("INFO", "positionSize", positionSize)
 	if positionSize < 0.0001 {
 		ft.notif.Log("INFO", "TradeLev positionSize less than 0.0001. Abort.", fmt.Sprintf("%.6f", positionSize))
 		return
 	}
-
-	var side string
-	var sideOpposite string
-	if msg.Signal == 1 {
-		side = "buy"
-		sideOpposite = "sell"
-	} else if msg.Signal == -1 {
-		side = "sell"
-		sideOpposite = "buy"
-	}
-
 	ft.notif.Log("", market, side)
-
-	time.Sleep(time.Second)
 
 	orderMarketFuture, err := client.PlaceMarketOrder(market, side, "market", positionSize)
 	if err != nil {
 		ft.notif.Log("ERROR", "TradeLev orderMarketFuture. Abort.", err.Error())
 		return
 	}
-
 	if !orderMarketFuture.Success {
-		ft.notif.Log("ERROR", "TradeLev orderMarketFuture no success. Abort.", orderMarketFuture)
+		ft.notif.Log("ERROR", "TradeLev orderMarketFuture no success. Abort.", orderMarketFuture.HTTPCode, orderMarketFuture.ErrorMessage)
 		return
 	}
 
 	ft.notif.Log("INFO", "TradeLev orderMarketFuture SUCCESS.")
-
-	time.Sleep(time.Second)
-
 	tpSize := RoundUp(positionSize/3, 4)
 	slSize := positionSize
 
-	price, err = ft.appState.ReadLatestPriceForMarket(market)
+	spotPrice, err = ft.appState.ReadLatestPriceForMarket(spotMarket)
 	var slPrice float64
 	var tpPrice float64
-	if msg.Signal == 1 {
-		slPrice = Round(price-msg.AtrSL, 1)
-		tpPrice = Round(price+msg.AtrTP, 1)
-	} else if msg.Signal == -1 {
-		slPrice = Round(price+msg.AtrSL, 1)
-		tpPrice = Round(price-msg.AtrTP, 1)
+	if side == "buy" {
+		slPrice = Round(spotPrice-msg.AtrSL, 1)
+		tpPrice = Round(spotPrice+msg.AtrTP, 1)
+	} else if side == "sell" {
+		slPrice = Round(spotPrice+msg.AtrSL, 1)
+		tpPrice = Round(spotPrice-msg.AtrTP, 1)
 	}
-
-	ft.notif.Log("", "price", fmt.Sprintf("%.2f", price))
+	ft.notif.Log("", "price", fmt.Sprintf("%.2f", spotPrice))
 	ft.notif.Log("", sideOpposite, "slSize", fmt.Sprintf("%.4f", slSize), "slPrice", fmt.Sprintf("%.2f", slPrice))
 	ft.notif.Log("", sideOpposite, "tpSize", fmt.Sprintf("%.4f", tpSize), "tpPrice", fmt.Sprintf("%.2f", tpPrice))
-
 	slOrder, err := client.PlaceTriggerOrder(market, sideOpposite, slSize, "stop", true, true, slPrice, 0.0, 0.0)
 	if err != nil {
 		ft.notif.Log("ERROR", "TradeLev SL order. TODO close position. Abort.", err.Error())
 		return
 	}
 	if !slOrder.Success {
-		ft.notif.Log("ERROR", "TradeLev SL order UNSUCCESSFUL. TODO close position. Abort.", slOrder.Result)
+		ft.notif.Log("ERROR", "TradeLev SL order UNSUCCESSFUL. TODO close position. Abort.", slOrder.HTTPCode, slOrder.ErrorMessage)
 		return
 	}
 	ft.notif.Log("INFO", "TradeLev SL SUCCESS.")
-
-	// tpOrderOld, err := client.PlaceOrder(market, sideOpposite, tpPrice, "limit", tpSize, true, false, true)
 	tpOrder, err := client.PlaceTriggerOrder(market, sideOpposite, tpSize, "takeProfit", true, true, tpPrice, 0.0, 0.0)
 	if err != nil {
 		ft.notif.Log("ERROR", "TradeLev TP order. Check manually.", err.Error())
 		return
 	}
 	if !tpOrder.Success {
-		ft.notif.Log("ERROR", "TradeLev TP order UNSUCCESSFUL. Check manually.", tpOrder.Result)
+		ft.notif.Log("ERROR", "TradeLev TP order UNSUCCESSFUL. Check manually.", tpOrder.HTTPCode, tpOrder.ErrorMessage)
 		return
 	}
 	ft.notif.Log("INFO", "TradeLev TP SUCCESS.")

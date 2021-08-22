@@ -18,8 +18,10 @@ type NewOrder struct {
 }
 
 type NewOrderResponse struct {
-	Success bool  `json:"success"`
-	Result  Order `json:"result"`
+	Success      bool   `json:"success"`
+	Result       Order  `json:"result"`
+	ErrorMessage string `json:"error"`
+	HTTPCode     int
 }
 
 type Order struct {
@@ -70,8 +72,10 @@ type ModifyTriggerOrder struct {
 }
 
 type NewTriggerOrderResponse struct {
-	Success bool         `json:"success"`
-	Result  TriggerOrder `json:"result"`
+	Success      bool         `json:"success"`
+	Result       TriggerOrder `json:"result"`
+	ErrorMessage string       `json:"error"`
+	HTTPCode     int
 }
 
 type TriggerOrder struct {

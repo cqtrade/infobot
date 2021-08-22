@@ -63,21 +63,36 @@ func (tvc *TvController) PostFlash(ctx *gin.Context) {
 			}
 		}(message.Ticker)
 		return
-	case 888:
-		go tvc.ftxTrade.ArbStart("arbbtc", "BTC")
-		return
-	case -888:
-		go tvc.ftxTrade.ArbEnd("arbbtc", "BTC")
-		return
 
-		// enter_buy 1
-		// enter_sell -1
-		// exit_buy 2
-		// exit_sell -2
+	// case 888:
+	// 	go tvc.ftxTrade.ArbStart("arbbtc", "BTC")
+	// 	return
+	// case -888:
+	// 	go tvc.ftxTrade.ArbEnd("arbbtc", "BTC")
+	// 	return
 
 	case 1, -1, 2, -2:
 		go func(msg types.JSONMessageBody) {
-			tvc.ftxTrade.TradeLev(msg)
+			var side string
+			var sideOpposite string
+			if message.Signal == 1 { // enter_buy 1
+				side = "buy"
+				sideOpposite = "sell"
+			} else if message.Signal == -1 { // enter_sell -1
+				side = "sell"
+				sideOpposite = "buy"
+			} else if message.Signal == 2 { // exit_buy 2
+				side = "exitBuy"
+				sideOpposite = "sell"
+			} else if message.Signal == -2 { // exit_sell -2
+				side = "exitSell"
+				sideOpposite = "buy"
+			}
+
+			tvc.ftxTrade.TradeLevCrypto(msg, 1, side, sideOpposite, "dc")
+			time.Sleep(time.Second)
+			tvc.ftxTrade.TradeLevCrypto(msg, 1, side, sideOpposite, "d")
+
 			ticker := msg.Ticker
 			t := strings.ToUpper(ticker)
 			if message.Signal == 1 { // enter_buy 1

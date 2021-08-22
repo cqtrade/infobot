@@ -26,18 +26,21 @@ func (ft *FtxTrade) checkPosition(client *ftx.FtxClient, market string) {
 	}
 
 	triggerOrdersLength := len(openTriggerOrders.Result)
+
 	var subAcc string
 	if client.Subaccount == "" {
 		subAcc = "main"
 	} else {
 		subAcc = client.Subaccount
 	}
+
 	var sidePos string
 	if position.Size > 0 {
 		sidePos = position.Side
 	} else {
 		sidePos = ""
 	}
+
 	writePositionsInfo := types.WritePositionsInfo{
 		Key: subAcc + "_" + market,
 		PositionInfo: types.PositionInfo{
@@ -47,11 +50,13 @@ func (ft *FtxTrade) checkPosition(client *ftx.FtxClient, market string) {
 		},
 		Resp: make(chan bool),
 	}
+
 	if position.Size == 0 && triggerOrdersLength == 0 {
 		ft.appState.PositionsInfoWrites <- writePositionsInfo
 		<-writePositionsInfo.Resp
 		return
 	}
+
 	var slOrder structs.TriggerOrder
 	lenghtOfStopOrders := 0
 	lenghtOfTpOrders := 0
@@ -68,6 +73,7 @@ func (ft *FtxTrade) checkPosition(client *ftx.FtxClient, market string) {
 	writePositionsInfo.PositionInfo.TakeProfits = lenghtOfTpOrders
 	ft.appState.PositionsInfoWrites <- writePositionsInfo
 	<-writePositionsInfo.Resp
+
 	if position.Size == 0 && triggerOrdersLength > 0 {
 		ft.notif.Log("INFO", "checkPosition", "no position, open trigger orders. cancel all open orders.")
 		res, err := client.CancelAllOrders()
@@ -100,11 +106,6 @@ func (ft *FtxTrade) checkPosition(client *ftx.FtxClient, market string) {
 	diffAllowed := 0.0001
 	diff := math.Abs((position.AverageOpenPrice / slOrder.TriggerPrice) - 1)
 
-	// ft.notif.Log("", "latest price", market, price)
-	// fmt.Println("position.AverageOpenPrice", position.AverageOpenPrice)
-	// fmt.Println("slOrder.TriggerPrice", slOrder.TriggerPrice, slOrder.Size)
-	// fmt.Println("diff", diff)
-
 	if position.Size < slOrder.Size && diff > diffAllowed {
 		newSLtriggerPrice := position.AverageOpenPrice
 		if position.Side == "buy" && newSLtriggerPrice > price {
@@ -131,12 +132,20 @@ func (ft *FtxTrade) checkPosition(client *ftx.FtxClient, market string) {
 func (ft *FtxTrade) RunPositionsCheck() {
 	key := ft.cfg.FTXKey
 	secret := ft.cfg.FTXSecret
+
 	clientBTCD := ftx.New(key, secret, ft.cfg.SubAccBTCD)
 	clientETHD := ftx.New(key, secret, ft.cfg.SubAccETHD)
+	clientBTCDC := ftx.New(key, secret, ft.cfg.SubAccBTCDC)
+	clientETHDC := ftx.New(key, secret, ft.cfg.SubAccETHDC)
+
 	for {
 		time.Sleep(time.Second * 10)
 		ft.checkPosition(clientBTCD, ft.cfg.FutureBTC)
 		time.Sleep(time.Second)
 		ft.checkPosition(clientETHD, ft.cfg.FutureETH)
+		time.Sleep(time.Second)
+		ft.checkPosition(clientBTCDC, ft.cfg.FutureBTC)
+		time.Sleep(time.Second)
+		ft.checkPosition(clientETHDC, ft.cfg.FutureETH)
 	}
 }

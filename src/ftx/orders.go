@@ -158,12 +158,14 @@ func (client *FtxClient) PlaceMarketOrder(market string, side string,
 		return newOrderResponse, err
 	}
 	resp, err := client._post("orders", requestBody)
+
 	if err != nil {
 		log.Printf("Error PlaceOrder", err)
 		fmt.Println("Error Place Market Order", err)
 		return newOrderResponse, err
 	}
 	err = _processResponse(resp, &newOrderResponse)
+	newOrderResponse.HTTPCode = resp.StatusCode
 	return newOrderResponse, err
 }
 
@@ -241,6 +243,7 @@ func (client *FtxClient) PlaceTriggerOrder(market string, side string, size floa
 		return newTriggerOrderResponse, err
 	}
 	err = _processResponse(resp, &newTriggerOrderResponse)
+	newTriggerOrderResponse.HTTPCode = resp.StatusCode
 	return newTriggerOrderResponse, err
 }
 
