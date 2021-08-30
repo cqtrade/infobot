@@ -4,6 +4,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cqtrade/infobot/src/config"
 	"github.com/cqtrade/infobot/src/ftxtrade"
 	"github.com/cqtrade/infobot/src/notification"
 	"github.com/cqtrade/infobot/src/types"
@@ -11,12 +12,14 @@ import (
 )
 
 type TvController struct {
+	cfg      config.Config
 	notif    notification.Notification
 	ftxTrade ftxtrade.FtxTrade
 }
 
-func New(notif notification.Notification, ftxTrade ftxtrade.FtxTrade) *TvController {
+func New(cfg config.Config, notif notification.Notification, ftxTrade ftxtrade.FtxTrade) *TvController {
 	return &TvController{
+		cfg:      cfg,
 		notif:    notif,
 		ftxTrade: ftxTrade,
 	}
@@ -89,9 +92,9 @@ func (tvc *TvController) PostFlash(ctx *gin.Context) {
 				sideOpposite = "buy"
 			}
 
-			tvc.ftxTrade.TradeLevCrypto(msg, 1, side, sideOpposite, "dc")
+			tvc.ftxTrade.TradeLevCrypto(msg, tvc.cfg.RiskDC, side, sideOpposite, "dc")
 			time.Sleep(time.Second)
-			tvc.ftxTrade.TradeLevCrypto(msg, 1, side, sideOpposite, "d")
+			tvc.ftxTrade.TradeLevCrypto(msg, tvc.cfg.RiskD, side, sideOpposite, "d")
 
 			ticker := msg.Ticker
 			t := strings.ToUpper(ticker)
@@ -101,15 +104,15 @@ func (tvc *TvController) PostFlash(ctx *gin.Context) {
 				time.Sleep(time.Second)
 				tvc.ftxTrade.BuyCoinBull("bull", "BULL/USD")
 			} else if message.Signal == 2 { // exit_buy 2
-				if strings.HasPrefix(t, "BTC") || strings.HasPrefix(t, "XBT") {
-					time.Sleep(time.Second)
-					tvc.ftxTrade.TpCoinBull("bull", "BULL/USD", "BULL")
-					time.Sleep(time.Second)
-					tvc.ftxTrade.TpCoinBull("ethbull", "ETHBULL/USD", "ETHBULL")
-				} else if strings.HasPrefix(t, "ETH") {
-					time.Sleep(time.Second)
-					tvc.ftxTrade.TpCoinBull("ethbull", "ETHBULL/USD", "ETHBULL")
-				}
+				// if strings.HasPrefix(t, "BTC") || strings.HasPrefix(t, "XBT") {
+				// 	time.Sleep(time.Second)
+				// 	tvc.ftxTrade.TpCoinBull("bull", "BULL/USD", "BULL")
+				// 	time.Sleep(time.Second)
+				// 	tvc.ftxTrade.TpCoinBull("ethbull", "ETHBULL/USD", "ETHBULL")
+				// } else if strings.HasPrefix(t, "ETH") {
+				// 	time.Sleep(time.Second)
+				// 	tvc.ftxTrade.TpCoinBull("ethbull", "ETHBULL/USD", "ETHBULL")
+				// }
 			} else if message.Signal == -1 { // TODO enter_sell -1 xbt
 				if strings.HasPrefix(t, "BTC") || strings.HasPrefix(t, "XBT") {
 					tvc.notif.Log("INFO", "TODO EXIT crypto, ARB BTC,ETH?", message)

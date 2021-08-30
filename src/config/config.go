@@ -23,6 +23,8 @@ type Config struct {
 	SubAccETHD           string
 	SubAccBTCDC          string
 	SubAccETHDC          string
+	RiskD                float64
+	RiskDC               float64
 }
 
 func New() *Config {
@@ -48,5 +50,7 @@ func New() *Config {
 		SubAccETHD:           viper.GetString("SUBA_ETHD"),
 		SubAccBTCDC:          viper.GetString("SUBA_BTCDC"),
 		SubAccETHDC:          viper.GetString("SUBA_ETHDC"),
+		RiskD:                viper.GetFloat64("RISKD"),
+		RiskDC:               viper.GetFloat64("RISKDC"),
 	}
 }

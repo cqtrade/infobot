@@ -45,7 +45,7 @@ func Round(val float64, precision int) float64 {
 }
 
 func (ft *FtxTrade) TpCoinBull(subAcc string, market string, coin string) {
-	fractionPerc := 0.2
+	tpPerc := 0.2
 
 	key := ft.cfg.FTXKey
 	secret := ft.cfg.FTXSecret
@@ -56,28 +56,51 @@ func (ft *FtxTrade) TpCoinBull(subAcc string, market string, coin string) {
 		ft.notif.Log("ERROR", coin, "TpCoinBull CheckSpotBalance. Abort.", err.Error())
 		return
 	}
-	coinFree := balanceCoin.Free
-	marketPrice, err := ft.appState.ReadLatestPriceForMarket(market)
+	if balanceCoin.Free < 0.0001 {
+		ft.notif.Log("", "TpCoinBull too little coin to take profit. Abort", balanceCoin.Free)
+		return
+	}
+
+	spotPrice, err := ft.appState.ReadLatestPriceForMarket(market)
 	if err != nil {
 		ft.notif.Log("ERROR", market, "TpCoinBull ReadLatestPriceForMarket. Abort.", err.Error())
 		return
 	}
-
-	valueUSD := coinFree * marketPrice
-	size := math.Round((coinFree*fractionPerc)*10000) / 10000
-
-	fractionUSD := valueUSD * fractionPerc
-	if fractionUSD >= 4 {
-		_, err := client.PlaceMarketOrder(market, "sell", "market", size)
-		if err != nil {
-			fmt.Println("ERROR with Market BUY order ", err)
-		} else {
-			ft.notif.Log("INFO", "TpCoinBull FLOW SUCCESS", market)
-		}
-	} else {
-		fmt.Println("Fraction value ", fractionUSD)
+	coinUSD := balanceCoin.Free * spotPrice
+	balanceUSD, err := ft.CheckSpotBalance(client, subAcc, "USD")
+	if err != nil {
+		ft.notif.Log("ERROR", "TpCoinBull get USD balance", err.Error())
+		return
 	}
-	// TODO if it is > 10 sell market or add trailing stop
+	equity := balanceUSD.Free + coinUSD
+	ft.notif.Log("", "free coin", balanceCoin.Free)
+	ft.notif.Log("", "equity", equity)
+
+	tpUSD := RoundDown((equity * tpPerc), 4)
+	ft.notif.Log("", "tpUSD", tpUSD)
+	tpCoin := RoundDown((tpUSD / spotPrice), 4)
+	ft.notif.Log("", "tpCoin", tpCoin)
+	if tpCoin > balanceCoin.Free {
+		tpCoin = RoundDown((balanceCoin.Free / 2), 4)
+		ft.notif.Log("", "Less tpCoin", tpCoin)
+	}
+
+	size := tpCoin
+
+	if size*spotPrice >= 10 {
+		order, err := client.PlaceMarketOrder(market, "sell", "market", size)
+		if err != nil {
+			ft.notif.Log("ERROR", "TpCoinBull Market BUY order. Abort.", market, err.Error())
+			return
+		}
+		if !order.Success {
+			ft.notif.Log("ERROR", "TpCoinBull  UNSUCCESSFUL", market, order.HTTPCode, order.ErrorMessage)
+			return
+		}
+		ft.notif.Log("INFO", "TpCoinBull FLOW SUCCESS", market)
+	} else {
+		ft.notif.Log("INFO", "TpCoinBull too small capital, Fraction value. Abort", market, size*spotPrice)
+	}
 }
 
 func (ft *FtxTrade) BuyCoinBull(subAcc string, market string) {

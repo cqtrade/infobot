@@ -178,6 +178,16 @@ func (ft *FtxTrade) TradeLevCrypto(
 		return
 	}
 
+	if position.Size != 0 && side == "exitBuy" && position.Side == "sell" {
+		ft.notif.Log("INFO", "TradeLev in sell recieved exitBuy. Abort.", side, msg.Signal)
+		return
+	}
+
+	if position.Size != 0 && side == "exitSell" && position.Side == "buy" {
+		ft.notif.Log("INFO", "TradeLev in buy recieved exitSell. Abort.", side, msg.Signal)
+		return
+	}
+
 	time.Sleep(time.Second)
 	spotPrice, err = ft.appState.ReadLatestPriceForMarket(spotMarket)
 
