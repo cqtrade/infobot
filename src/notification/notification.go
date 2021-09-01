@@ -93,7 +93,6 @@ func (ds *Notification) RunReadLogMessages() {
 		if res.Channel == "" || res.Message == "" {
 			continue
 		}
-		fmt.Println(res.Message)
 		if !ds.cfg.DiscordEnabled {
 			return
 		}
