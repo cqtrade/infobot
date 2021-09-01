@@ -98,22 +98,12 @@ func (tvc *TvController) PostFlash(ctx *gin.Context) {
 
 			ticker := msg.Ticker
 			t := strings.ToUpper(ticker)
-			if message.Signal == 1 { // enter_buy 1
+			if side == "buy" {
 				time.Sleep(time.Second)
 				tvc.ftxTrade.BuyCoinBull("ethbull", "ETHBULL/USD")
 				time.Sleep(time.Second)
 				tvc.ftxTrade.BuyCoinBull("bull", "BULL/USD")
-			} else if message.Signal == 2 { // exit_buy 2
-				// if strings.HasPrefix(t, "BTC") || strings.HasPrefix(t, "XBT") {
-				// 	time.Sleep(time.Second)
-				// 	tvc.ftxTrade.TpCoinBull("bull", "BULL/USD", "BULL")
-				// 	time.Sleep(time.Second)
-				// 	tvc.ftxTrade.TpCoinBull("ethbull", "ETHBULL/USD", "ETHBULL")
-				// } else if strings.HasPrefix(t, "ETH") {
-				// 	time.Sleep(time.Second)
-				// 	tvc.ftxTrade.TpCoinBull("ethbull", "ETHBULL/USD", "ETHBULL")
-				// }
-			} else if message.Signal == -1 { // TODO enter_sell -1 xbt
+			} else if side == "sell" {
 				if strings.HasPrefix(t, "BTC") || strings.HasPrefix(t, "XBT") {
 					tvc.notif.Log("INFO", "TODO EXIT crypto, ARB BTC,ETH?", message)
 				}

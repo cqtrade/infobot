@@ -172,13 +172,12 @@ func (ds *Notification) Log(level string, a ...interface{}) {
 	message := strings.Join(s[:], " ")
 
 	if l == "INFO" || l == "ERROR" {
-		fmt.Println(message)
 		write := types.WriteLogMessage{
 			Val:  types.LogMessage{Message: message, Channel: ds.cfg.DiscordChLogs},
 			Resp: make(chan bool)}
 		ds.ChLogMessageWrites <- write
 		<-write.Resp
-	} else {
+	} else if l != "INFO" {
 		fmt.Println(message)
 	}
 }
