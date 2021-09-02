@@ -25,6 +25,7 @@ func (client *FtxClient) GetHistoricalPrices(market string, resolutionSeconds in
 		return historicalPrices, err
 	}
 	err = _processResponse(resp, &historicalPrices)
+	historicalPrices.HTTPCode = resp.StatusCode
 	return historicalPrices, err
 }
 

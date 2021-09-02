@@ -1,6 +1,7 @@
 package state
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -85,6 +86,11 @@ func (s *State) ReadLatestPriceForMarket(market string) (float64, error) {
 		candles, err := client.GetHistoricalPriceLatest(market, 15, 1)
 		if err != nil {
 			return latestPrice, err
+		}
+
+		if !candles.Success {
+			s.notif.Log("ERROR", "ReadLatestPriceForMarket rest unsuccessful", candles.HTTPCode, candles.ErrorMessage)
+			return latestPrice, errors.New(fmt.Sprintf("%d ", candles.HTTPCode) + candles.ErrorMessage)
 		}
 
 		if len(candles.Result) > 0 {

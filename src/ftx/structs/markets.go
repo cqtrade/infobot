@@ -13,8 +13,10 @@ type HistoricalPrice struct {
 	Volume    float64   `json:"volume"`
 }
 type HistoricalPrices struct {
-	Success bool              `json:"success"`
-	Result  []HistoricalPrice `json:"result"`
+	Success      bool              `json:"success"`
+	Result       []HistoricalPrice `json:"result"`
+	ErrorMessage string            `json:"error"`
+	HTTPCode     int
 }
 
 type Trade struct {
