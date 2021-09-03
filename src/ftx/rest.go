@@ -3,7 +3,6 @@ package ftx
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -29,30 +28,56 @@ func (client *FtxClient) signRequest(method string, path string, body []byte) *h
 	return req
 }
 
-// TODO Add retry logic HERE
-func retry(retryCount int, f func() error) {
+func retry(retryCount int, f func(count int) (*http.Response, bool, error)) (*http.Response, error) {
 	var err error
+	var success bool
+	var resp *http.Response
 	i := 0
-	for i == 0 || (err != nil && i < retryCount) {
+	for i == 0 || (i < retryCount && (err != nil || !success)) {
 		i++
-		err = f()
-		time.Sleep(time.Second)
+		resp, success, err = f(i)
 	}
+	return resp, err
 }
 
-func (client *FtxClient) _getRetry(path string, body []byte) (*http.Response, error) {
+func (client *FtxClient) _getRetry(retryCount int, path string, body []byte) (*http.Response, error) {
 	var resp *http.Response
 	var err error
-	retry(3, func() error {
-		var err error
-		preparedRequest := client.signRequest("GET", path, body)
-		resp, err = client.Client.Do(preparedRequest)
-		if resp.StatusCode == 429 {
-			time.Sleep(time.Second * 61)
-			return errors.New("429")
-		}
-		return err
-	})
+	resp, err = retry(
+		retryCount,
+		func(count int) (*http.Response, bool, error) {
+
+			preparedRequest := client.signRequest("GET", path, body)
+
+			resp, err = client.Client.Do(preparedRequest)
+
+			fmt.Println(fmt.Sprintf("Request %d", count))
+
+			if err != nil {
+				return resp, false, err
+			}
+
+			if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+				return resp, true, err
+			}
+
+			if resp.StatusCode == 429 { // retry, rate limit
+				fmt.Println(fmt.Sprintf("%+v", resp.Header))
+				time.Sleep(time.Second * 61) // TODO needs value from header
+				return resp, false, err
+			}
+
+			if resp.StatusCode >= 500 && resp.StatusCode < 600 {
+				time.Sleep(time.Second * 5 * time.Duration(int64(count))) // retry, server side error, exponential backoff
+				return resp, false, err
+			}
+
+			// client error or any other non retry
+			fmt.Println(fmt.Sprintf("%+v", resp.Header))
+
+			return resp, true, err
+		},
+	)
 
 	return resp, err
 }

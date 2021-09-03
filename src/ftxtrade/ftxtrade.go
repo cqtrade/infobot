@@ -115,48 +115,51 @@ func (ft *FtxTrade) BuyCoinBull(subAcc string, market string) {
 	equityUSD := balanceCoinUSD.Free
 	positionSize := ft.cfg.PositionSize
 	profitPercentage := ft.cfg.ProfitPercentage
-	if equityUSD > positionSize {
+	if equityUSD < positionSize {
+		ft.notif.Log("INFO", "BuyCoinBull not enough cash. Abort.", market, positionSize, ">", equityUSD)
+	}
+
+	marketPrice, err := ft.appState.ReadLatestPriceForMarket(market)
+	if err != nil {
+		ft.notif.Log("ERROR", "BuyCoinBull ReadLatestPriceForMarket. Abort.", market, err.Error())
+		return
+	}
+
+	if marketPrice <= 0.0 {
+		ft.notif.Log("ERROR", "BuyCoinBull marketPrice price not greater than zero: ", marketPrice, market)
+		return
+	}
+
+	// TODO use different rounding here?
+	size := math.Round((positionSize/marketPrice)*10000) / 10000
+
+	orderMarket, err := client.PlaceMarketOrder(market, "buy", "market", size)
+	if err != nil {
+		ft.notif.Log("ERROR", "BuyCoinBull Market BUY order. Abort.", market, err.Error())
+		return
+	}
+
+	if orderMarket.Success == true {
+		sizeTP := math.Round((size/2)*10000) / 10000 // sell 50%
 		marketPrice, err := ft.appState.ReadLatestPriceForMarket(market)
 		if err != nil {
 			ft.notif.Log("ERROR", "BuyCoinBull ReadLatestPriceForMarket. Abort.", market, err.Error())
 			return
 		}
 
-		if marketPrice <= 0.0 {
-			ft.notif.Log("ERROR", "BuyCoinBull marketPrice price not greater than zero: ", marketPrice, market)
-			return
-		}
+		priceTP := math.Round((marketPrice+marketPrice*profitPercentage)*10) / 10
 
-		// TODO use different rounding here?
-		size := math.Round((positionSize/marketPrice)*10000) / 10000
+		orderTP, err := client.PlaceOrder(market, "sell", priceTP, "limit", sizeTP, false, false, false)
 
-		orderMarket, err := client.PlaceMarketOrder(market, "buy", "market", size)
 		if err != nil {
-			ft.notif.Log("ERROR", "BuyCoinBull Market BUY order. Abort.", market, err.Error())
-			return
+			ft.notif.Log("ERROR", "BuyCoinBull TP order. Abort.", market, err.Error())
+		} else if orderTP.Success {
+			ft.notif.Log("INFO", "BuyCoinBull FLOW SUCCESS", market)
 		}
-
-		if orderMarket.Success == true {
-			sizeTP := math.Round((size/2)*10000) / 10000 // sell 50%
-			marketPrice, err := ft.appState.ReadLatestPriceForMarket(market)
-			if err != nil {
-				ft.notif.Log("ERROR", "BuyCoinBull ReadLatestPriceForMarket. Abort.", market, err.Error())
-				return
-			}
-
-			priceTP := math.Round((marketPrice+marketPrice*profitPercentage)*10) / 10
-
-			orderTP, err := client.PlaceOrder(market, "sell", priceTP, "limit", sizeTP, false, false, false)
-
-			if err != nil {
-				ft.notif.Log("ERROR", "BuyCoinBull TP order. Abort.", market, err.Error())
-			} else if orderTP.Success {
-				ft.notif.Log("INFO", "BuyCoinBull FLOW SUCCESS", market)
-			}
-		} else {
-			ft.notif.Log("ERROR", "BuyCoinBull market order.", orderMarket, market)
-		}
+	} else {
+		ft.notif.Log("ERROR", "BuyCoinBull market order.", orderMarket, market)
 	}
+
 }
 
 // https://yourbasic.org/golang/convert-string-to-float/

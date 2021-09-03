@@ -21,6 +21,22 @@ var (
 )
 
 func Run() {
+	// key := cfg.FTXKey
+	// secret := cfg.FTXSecret
+	// client := ftx.New(key, secret, "")
+	// defer client.Client.CloseIdleConnections()
+
+	// candles, err := client.GetHistoricalPriceLatest("BULL/USD", 15, 1)
+	// if err != nil {
+	// 	fmt.Println(err.Error())
+	// }
+
+	// if !candles.Success {
+	// 	fmt.Println(fmt.Sprintf("HERE1 %d ", candles.HTTPCode) + candles.ErrorMessage)
+	// } else {
+	// 	fmt.Println(fmt.Sprintf("HERE2 %+v", candles))
+	// }
+
 	go notif.RunStateLogMessages()
 	go notif.RunReadLogMessages()
 	go appState.RunStateLatestPrices()
@@ -30,4 +46,5 @@ func Run() {
 	go notif.Log("INFO", "Boot")
 	go ft.RunPositionsCheck()
 	webServer.Run()
+
 }
