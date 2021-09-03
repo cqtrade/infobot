@@ -76,6 +76,7 @@ func (tvc *TvController) PostFlash(ctx *gin.Context) {
 
 	case 1, -1, 2, -2:
 		go func(msg types.JSONMessageBody) {
+			time.Sleep(time.Second * 16)
 			var side string
 			var sideOpposite string
 			if message.Signal == 1 { // enter_buy 1
