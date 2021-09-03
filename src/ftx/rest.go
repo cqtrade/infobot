@@ -51,8 +51,6 @@ func (client *FtxClient) _getRetry(retryCount int, path string, body []byte) (*h
 
 			resp, err = client.Client.Do(preparedRequest)
 
-			fmt.Println(fmt.Sprintf("Request %d", count))
-
 			if err != nil {
 				return resp, false, err
 			}
@@ -62,12 +60,14 @@ func (client *FtxClient) _getRetry(retryCount int, path string, body []byte) (*h
 			}
 
 			if resp.StatusCode == 429 { // retry, rate limit
+				fmt.Println(fmt.Sprintf("Request %d", count))
 				fmt.Println(fmt.Sprintf("%+v", resp.Header))
 				time.Sleep(time.Second * 61) // TODO needs value from header
 				return resp, false, err
 			}
 
 			if resp.StatusCode >= 500 && resp.StatusCode < 600 {
+				fmt.Println(fmt.Sprintf("Request %d", count))
 				time.Sleep(time.Second * 5 * time.Duration(int64(count))) // retry, server side error, exponential backoff
 				return resp, false, err
 			}
