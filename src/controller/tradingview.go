@@ -61,6 +61,8 @@ func (tvc *TvController) PostFlash(ctx *gin.Context) {
 			t := strings.ToUpper(ticker)
 			if strings.HasPrefix(t, "BTC") || strings.HasPrefix(t, "XBT") {
 				tvc.ftxTrade.TpCoinBull("bull", "BULL/USD", "BULL")
+				time.Sleep(time.Second * 1)
+				tvc.ftxTrade.TpCoinBull("ethbull", "ETHBULL/USD", "ETHBULL")
 			} else if strings.HasPrefix(t, "ETH") {
 				tvc.ftxTrade.TpCoinBull("ethbull", "ETHBULL/USD", "ETHBULL")
 			}
@@ -94,8 +96,6 @@ func (tvc *TvController) PostFlash(ctx *gin.Context) {
 			}
 
 			tvc.ftxTrade.TradeLevCrypto(msg, tvc.cfg.RiskDC, side, sideOpposite, "dc")
-			time.Sleep(time.Second)
-			tvc.ftxTrade.TradeLevCrypto(msg, tvc.cfg.RiskD, side, sideOpposite, "d")
 
 			ticker := msg.Ticker
 			t := strings.ToUpper(ticker)

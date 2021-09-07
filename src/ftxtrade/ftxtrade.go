@@ -45,7 +45,7 @@ func Round(val float64, precision int) float64 {
 }
 
 func (ft *FtxTrade) TpCoinBull(subAcc string, market string, coin string) {
-	tpPerc := 0.2
+	tpPerc := 0.05
 
 	key := ft.cfg.FTXKey
 	secret := ft.cfg.FTXSecret

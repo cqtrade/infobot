@@ -132,18 +132,11 @@ func (ft *FtxTrade) checkPosition(client *ftx.FtxClient, market string) {
 func (ft *FtxTrade) RunPositionsCheck() {
 	key := ft.cfg.FTXKey
 	secret := ft.cfg.FTXSecret
-
-	clientBTCD := ftx.New(key, secret, ft.cfg.SubAccBTCD)
-	clientETHD := ftx.New(key, secret, ft.cfg.SubAccETHD)
 	clientBTCDC := ftx.New(key, secret, ft.cfg.SubAccBTCDC)
 	clientETHDC := ftx.New(key, secret, ft.cfg.SubAccETHDC)
 
 	for {
-		time.Sleep(time.Second * 10)
-		ft.checkPosition(clientBTCD, ft.cfg.FutureBTC)
-		time.Sleep(time.Second)
-		ft.checkPosition(clientETHD, ft.cfg.FutureETH)
-		time.Sleep(time.Second)
+		time.Sleep(time.Second * 15)
 		ft.checkPosition(clientBTCDC, ft.cfg.FutureBTC)
 		time.Sleep(time.Second)
 		ft.checkPosition(clientETHDC, ft.cfg.FutureETH)

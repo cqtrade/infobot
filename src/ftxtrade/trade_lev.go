@@ -94,8 +94,6 @@ func (ft *FtxTrade) TradeLevCrypto(
 
 	if subAccType == "dc" {
 		shouldSwapEquity = true
-	} else if subAccType == "d" {
-		shouldSwapEquity = false
 	} else {
 		ft.notif.Log("ERROR", "subAccType not in dc|d. Abort.", subAccType)
 		return
@@ -105,8 +103,6 @@ func (ft *FtxTrade) TradeLevCrypto(
 		market = ft.cfg.FutureBTC
 		if subAccType == "dc" {
 			subAcc = ft.cfg.SubAccBTCDC
-		} else if subAccType == "d" {
-			subAcc = ft.cfg.SubAccBTCD
 		}
 		spotMarket = "BTC/USD"
 		coin = "BTC"
@@ -114,8 +110,6 @@ func (ft *FtxTrade) TradeLevCrypto(
 		market = ft.cfg.FutureETH
 		if subAccType == "dc" {
 			subAcc = ft.cfg.SubAccETHDC
-		} else if subAccType == "d" {
-			subAcc = ft.cfg.SubAccETHD
 		}
 		spotMarket = "ETH/USD"
 		coin = "ETH"
