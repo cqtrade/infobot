@@ -42,6 +42,8 @@ type Position struct {
 	BreakEvenPrice               float64 `json:"recentBreakEvenPrice"`
 }
 type Positions struct {
-	Success bool       `json:"success"`
-	Result  []Position `json:"result"`
+	Success      bool       `json:"success"`
+	Result       []Position `json:"result"`
+	ErrorMessage string     `json:"error"`
+	HTTPCode     int
 }

@@ -26,7 +26,9 @@ func Run() {
 	// client := ftx.New(key, secret, "")
 	// defer client.Client.CloseIdleConnections()
 
-	// candles, err := client.GetHistoricalPriceLatest("BULL/USD", 15, 1)
+	// // candles, err := client.GetHistoricalPriceLatest("BULL/USD", 15, 1)
+	// // candles, err := client.GetHistoricalPriceLatest("BULL/USD", 15, 1)
+	// candles, err := client.GetPositions(true)
 	// if err != nil {
 	// 	fmt.Println(err.Error())
 	// }

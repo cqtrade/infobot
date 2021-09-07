@@ -2,6 +2,7 @@ package ftxtrade
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/cqtrade/infobot/src/ftx"
 	"github.com/cqtrade/infobot/src/ftx/structs"
@@ -15,7 +16,7 @@ func (ft *FtxTrade) CheckFuturePosition(client *ftx.FtxClient, future string) (s
 	}
 
 	if !positions.Success {
-		return position, errors.New("No Success CheckFuturePosition")
+		return position, errors.New("No Success CheckFuturePosition " + positions.ErrorMessage + fmt.Sprintf(" %d", positions.HTTPCode))
 	}
 
 	for _, currPosition := range positions.Result {

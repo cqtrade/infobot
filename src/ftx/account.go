@@ -16,11 +16,12 @@ func (client *FtxClient) GetPositions(showAvgPrice bool) (Positions, error) {
 	} else {
 		url = "positions"
 	}
-	resp, err := client._get(url, []byte(""))
+	resp, err := client._getRetry(2, url, []byte(""))
 	if err != nil {
 		log.Printf("Error GetPositions", err)
 		return positions, err
 	}
 	err = _processResponse(resp, &positions)
+	positions.HTTPCode = resp.StatusCode
 	return positions, err
 }
