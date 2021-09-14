@@ -76,14 +76,9 @@ func (ft *FtxTrade) TpCoinBull(subAcc string, market string, coin string) {
 	ft.notif.Log("", "free coin", balanceCoin.Free)
 	ft.notif.Log("", "equity", equity)
 
-	tpUSD := RoundDown((equity * tpPerc), 4)
+	tpUSD := RoundDown((coinUSD * tpPerc), 4)
 	ft.notif.Log("", "tpUSD", tpUSD)
-	tpCoin := RoundDown((tpUSD / spotPrice), 4)
-	ft.notif.Log("", "tpCoin", tpCoin)
-	if tpCoin > balanceCoin.Free {
-		tpCoin = RoundDown((balanceCoin.Free / 2), 4)
-		ft.notif.Log("", "Less tpCoin", tpCoin)
-	}
+	tpCoin := RoundDown((balanceCoin.Free * tpPerc), 4)
 
 	size := tpCoin
 

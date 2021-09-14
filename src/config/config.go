@@ -23,6 +23,16 @@ type Config struct {
 	SubAccETHDC          string
 	RiskD                float64
 	RiskDC               float64
+	TaRsiPeriod          int
+	TaRocPeriod          int
+	TaNtdfLookback       int
+	TaNtdfSmoothedPeriod int
+	TaMfiPeriod          int
+	TaRsiLow             float64
+	TaMfiLow             float64
+	TaRocLow             float64
+	TaFilterLow          float64
+	TaFilterHigh         float64
 }
 
 func New() *Config {
@@ -48,5 +58,15 @@ func New() *Config {
 		SubAccETHDC:          viper.GetString("SUBA_ETHDC"),
 		RiskD:                viper.GetFloat64("RISKD"),
 		RiskDC:               viper.GetFloat64("RISKDC"),
+		TaRsiPeriod:          viper.GetInt("TA_RSI_PERIOD"),
+		TaRocPeriod:          viper.GetInt("TA_ROC_PERIOD"),
+		TaNtdfLookback:       viper.GetInt("TA_NTDF_LOOKBACK"),
+		TaNtdfSmoothedPeriod: viper.GetInt("TA_NTDFSMOOTHED_PERIOD"),
+		TaMfiPeriod:          viper.GetInt("TA_MFI_PERIOD"),
+		TaRsiLow:             viper.GetFloat64("TA_RSI_LOW"),
+		TaMfiLow:             viper.GetFloat64("TA_MFI_LOW"),
+		TaRocLow:             viper.GetFloat64("TA_ROC_LOW"),
+		TaFilterLow:          viper.GetFloat64("TA_FILTER_LOW"),
+		TaFilterHigh:         viper.GetFloat64("TA_FILTER_HIGH"),
 	}
 }

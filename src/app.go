@@ -8,6 +8,7 @@ import (
 	"github.com/cqtrade/infobot/src/notification"
 	"github.com/cqtrade/infobot/src/server"
 	"github.com/cqtrade/infobot/src/state"
+	"github.com/cqtrade/infobot/src/tasignals"
 )
 
 var (
@@ -17,28 +18,12 @@ var (
 	ft           ftxtrade.FtxTrade         = *ftxtrade.New(cfg, notif, appState)
 	ftws         ftxwebsocket.FtxWebSocket = *ftxwebsocket.New(cfg, notif, appState)
 	tvController tvcontroller.TvController = *tvcontroller.New(cfg, notif, ft)
+	tasigs       tasignals.TaSignals       = *tasignals.New(cfg, tvController)
 	webServer    server.Server             = *server.New(cfg, tvController)
 )
 
 func Run() {
-	// key := cfg.FTXKey
-	// secret := cfg.FTXSecret
-	// client := ftx.New(key, secret, "")
-	// defer client.Client.CloseIdleConnections()
-
-	// // candles, err := client.GetHistoricalPriceLatest("BULL/USD", 15, 1)
-	// // candles, err := client.GetHistoricalPriceLatest("BULL/USD", 15, 1)
-	// candles, err := client.GetPositions(true)
-	// if err != nil {
-	// 	fmt.Println(err.Error())
-	// }
-
-	// if !candles.Success {
-	// 	fmt.Println(fmt.Sprintf("HERE1 %d ", candles.HTTPCode) + candles.ErrorMessage)
-	// } else {
-	// 	fmt.Println(fmt.Sprintf("HERE2 %+v", candles))
-	// }
-
+	// tasigs.CheckFlashSignals()
 	go notif.RunStateLogMessages()
 	go notif.RunReadLogMessages()
 	go appState.RunStateLatestPrices()
@@ -48,5 +33,4 @@ func Run() {
 	go notif.Log("INFO", "Boot")
 	go ft.RunPositionsCheck()
 	webServer.Run()
-
 }
