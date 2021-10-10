@@ -27,10 +27,12 @@ func Run() {
 	go notif.RunStateLogMessages()
 	go notif.RunReadLogMessages()
 	go appState.RunStateLatestPrices()
-	go appState.RunPositionsInfo()
+	// go appState.RunPositionsInfo()
 	go ftws.RunWebSocket()
-	go ft.RunHealthPing()
-	go notif.Log("INFO", "Boot")
-	go ft.RunPositionsCheck()
-	webServer.Run()
+	// go ft.RunHealthPing()
+	// go notif.Log("INFO", "Boot")
+	// go ft.RunPositionsCheck()
+	// webServer.Run()
+
+	ft.PortfolioFTX("portfolio")
 }

@@ -111,7 +111,7 @@ func (ds *Notification) SendTextMessage(msg string) {
 
 func (ds *Notification) SendFlashMessage(msgJSON types.JSONMessageBody) {
 	m := "**" + msgJSON.Ticker + "**"
-
+	sendMsg := true
 	switch s := msgJSON.Signal; s {
 	case 1001:
 		m += " BUY CRYPTO, partial"
@@ -119,22 +119,25 @@ func (ds *Notification) SendFlashMessage(msgJSON types.JSONMessageBody) {
 		m += " Take partial profit, sell crypto"
 	case 1:
 		m += " Long"
-	case 2:
-		m += " Exit Long"
+	// case 2:
+	// 	m += " Exit Long"
 	case -1:
 		m += " Short"
-	case -2:
-		m += " Exit Short"
+	// case -2:
+	// 	m += " Exit Short"
 
 	default:
+		sendMsg = false
 		m += " unknown signal: " + fmt.Sprintf("%g", s)
 	}
 
-	write := types.WriteLogMessage{
-		Val:  types.LogMessage{Message: m, Channel: ds.cfg.DiscordChFlash},
-		Resp: make(chan bool)}
-	ds.ChLogMessageWrites <- write
-	<-write.Resp
+	if sendMsg {
+		write := types.WriteLogMessage{
+			Val:  types.LogMessage{Message: m, Channel: ds.cfg.DiscordChFlash},
+			Resp: make(chan bool)}
+		ds.ChLogMessageWrites <- write
+		<-write.Resp
+	}
 }
 
 func (ds *Notification) Log(level string, a ...interface{}) {
