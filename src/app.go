@@ -8,7 +8,6 @@ import (
 	"github.com/cqtrade/infobot/src/notification"
 	"github.com/cqtrade/infobot/src/server"
 	"github.com/cqtrade/infobot/src/state"
-	"github.com/cqtrade/infobot/src/tasignals"
 )
 
 var (
@@ -18,8 +17,8 @@ var (
 	ft           ftxtrade.FtxTrade         = *ftxtrade.New(cfg, notif, appState)
 	ftws         ftxwebsocket.FtxWebSocket = *ftxwebsocket.New(cfg, notif, appState)
 	tvController tvcontroller.TvController = *tvcontroller.New(cfg, notif, ft)
-	tasigs       tasignals.TaSignals       = *tasignals.New(cfg, tvController)
-	webServer    server.Server             = *server.New(cfg, tvController)
+	// tasigs       tasignals.TaSignals       = *tasignals.New(cfg, tvController)
+	webServer server.Server = *server.New(cfg, tvController)
 )
 
 func Run() {
@@ -32,5 +31,7 @@ func Run() {
 	go ft.RunHealthPing()
 	go notif.Log("INFO", "Boot")
 	go ft.RunPositionsCheck()
+	// ft.Portfolio("p")
 	webServer.Run()
+
 }

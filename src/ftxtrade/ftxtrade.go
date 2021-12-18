@@ -3,6 +3,7 @@
 package ftxtrade
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"net/http"
@@ -10,8 +11,10 @@ import (
 
 	"github.com/cqtrade/infobot/src/config"
 	"github.com/cqtrade/infobot/src/ftx"
+	"github.com/cqtrade/infobot/src/ftx/structs"
 	"github.com/cqtrade/infobot/src/notification"
 	"github.com/cqtrade/infobot/src/state"
+	"github.com/markcheno/go-talib"
 )
 
 type FtxTrade struct {
@@ -98,65 +101,6 @@ func (ft *FtxTrade) TpCoinBull(subAcc string, market string, coin string) {
 	}
 }
 
-func (ft *FtxTrade) BuyCoinBull(subAcc string, market string) {
-	key := ft.cfg.FTXKey
-	secret := ft.cfg.FTXSecret
-	client := ftx.New(key, secret, subAcc)
-	balanceCoinUSD, err := ft.CheckSpotBalance(client, subAcc, "USD")
-	if err != nil {
-		ft.notif.Log("ERROR", "USD", "BuyCoinBull CheckSpotBalance. Abort.", market, err.Error())
-		return
-	}
-	equityUSD := balanceCoinUSD.Free
-	positionSize := ft.cfg.PositionSize
-	profitPercentage := ft.cfg.ProfitPercentage
-	if equityUSD < positionSize {
-		ft.notif.Log("INFO", "BuyCoinBull not enough cash. Abort.", market, positionSize, ">", equityUSD)
-	}
-
-	marketPrice, err := ft.appState.ReadLatestPriceForMarket(market)
-	if err != nil {
-		ft.notif.Log("ERROR", "BuyCoinBull ReadLatestPriceForMarket. Abort.", market, err.Error())
-		return
-	}
-
-	if marketPrice <= 0.0 {
-		ft.notif.Log("ERROR", "BuyCoinBull marketPrice price not greater than zero: ", marketPrice, market)
-		return
-	}
-
-	// TODO use different rounding here?
-	size := math.Round((positionSize/marketPrice)*10000) / 10000
-
-	orderMarket, err := client.PlaceMarketOrder(market, "buy", "market", size)
-	if err != nil {
-		ft.notif.Log("ERROR", "BuyCoinBull Market BUY order. Abort.", market, err.Error())
-		return
-	}
-
-	if orderMarket.Success == true {
-		sizeTP := math.Round((size/2)*10000) / 10000 // sell 50%
-		marketPrice, err := ft.appState.ReadLatestPriceForMarket(market)
-		if err != nil {
-			ft.notif.Log("ERROR", "BuyCoinBull ReadLatestPriceForMarket. Abort.", market, err.Error())
-			return
-		}
-
-		priceTP := math.Round((marketPrice+marketPrice*profitPercentage)*10) / 10
-
-		orderTP, err := client.PlaceOrder(market, "sell", priceTP, "limit", sizeTP, false, false, false)
-
-		if err != nil {
-			ft.notif.Log("ERROR", "BuyCoinBull TP order. Abort.", market, err.Error())
-		} else if orderTP.Success {
-			ft.notif.Log("INFO", "BuyCoinBull FLOW SUCCESS", market)
-		}
-	} else {
-		ft.notif.Log("ERROR", "BuyCoinBull market order.", orderMarket, market)
-	}
-
-}
-
 // https://yourbasic.org/golang/convert-string-to-float/
 func (ft *FtxTrade) GetOverview(subAcc string) string {
 	key := ft.cfg.FTXKey
@@ -194,5 +138,217 @@ func (ft *FtxTrade) GetOverview(subAcc string) string {
 	} else {
 		return "No success getting balances for " + subAcc
 	}
+}
 
+type Item struct {
+	coin  string
+	alloc float64
+}
+
+func (ft *FtxTrade) BuyCoin(
+	subAcc string,
+	coin string,
+	buyQty float64,
+	sellQty float64,
+	tp float64,
+) {
+	market := coin + "/USD"
+	key := ft.cfg.FTXKey
+	secret := ft.cfg.FTXSecret
+	client := ftx.New(key, secret, subAcc)
+
+	// positionSize := positionUSD
+	// marketPrice, err := ft.appState.ReadLatestPriceForMarket(market)
+
+	// if err != nil {
+	// 	ft.notif.Log("ERROR", "BuyCoin ReadLatestPriceForMarket. Abort.", market, err.Error())
+	// 	return
+	// }
+
+	// if marketPrice <= 0.0 {
+	// 	ft.notif.Log("ERROR", "BuyCoin marketPrice price not greater than zero: ", marketPrice, market)
+	// 	return
+	// }
+
+	// TODO use different rounding here?
+	// size := math.Round((positionSize/marketPrice)*10000) / 10000
+	size := buyQty
+
+	orderMarket, err := client.PlaceMarketOrder(market, "buy", "market", size)
+	if err != nil {
+		ft.notif.Log("ERROR", "BuyCoin Market BUY order. Abort.", market, err.Error())
+		return
+	}
+
+	if !orderMarket.Success {
+		ft.notif.Log("ERROR", "BuyCoin market order.", orderMarket, market)
+	}
+
+	sizeTP := sellQty
+
+	priceTP := tp
+
+	orderTP, err := client.PlaceOrder(market, "sell", priceTP, "limit", sizeTP, false, false, false)
+
+	if err != nil {
+		ft.notif.Log("ERROR", "BuyCoin TP order. Abort.", market, err.Error())
+	} else if orderTP.Success {
+		ft.notif.Log("INFO", "BuyCoin FLOW SUCCESS", market)
+	}
+}
+
+func (ft *FtxTrade) Portfolio(subAcc string) {
+	var portfolio = []Item{
+		// {
+		// 	coin:  "BULL",
+		// 	alloc: 1,
+		// },
+		{
+			coin:  "ATOMBULL",
+			alloc: 0.5,
+		},
+		{
+			coin:  "MATICBULL",
+			alloc: 0.5,
+		},
+	}
+
+	fmt.Println("portfolio", portfolio, len(portfolio))
+	key := ft.cfg.FTXKey
+	secret := ft.cfg.FTXSecret
+	client := ftx.New(key, secret, subAcc)
+	sBalances, err := client.GetSubaccountBalances(subAcc)
+
+	if err != nil {
+		ft.notif.Log("ERROR", subAcc, " Abort. error receiveing balances", err.Error())
+		return
+	}
+
+	freeUSD := 0.0
+	if !sBalances.Success {
+		ft.notif.Log("ERROR", "Abort. No success getting balances for ", subAcc)
+		return
+
+	}
+
+	for _, balance := range sBalances.Result {
+		if balance.Coin == "USD" {
+			freeUSD = balance.Free
+		}
+	}
+
+	usd := 0.99 * freeUSD / 2
+
+	ft.notif.Log("", "USD", usd)
+	for _, item := range portfolio {
+		fmt.Println(item)
+		// GET ATR
+
+		atr, _, err := ft.GetAtr(item.coin)
+		if err != nil {
+			ft.notif.Log("ERROR", "Abort. No success getting atr ", err.Error())
+			return
+		}
+		market := item.coin + "/USD"
+		close, err := ft.appState.ReadLatestPriceForMarket(market)
+
+		if err != nil {
+			ft.notif.Log("ERROR", "BuyCoin portfolio. Abort.", market, err.Error())
+			return
+		}
+
+		if close <= 0.0 {
+			ft.notif.Log("ERROR", "BuyCoin portfolio price not greater than zero: ", close, market)
+			return
+		}
+
+		tp := close + 3.0*atr
+		profitPercentage := (tp / close) - 1.0
+		fmt.Println("%", profitPercentage)
+		// p = 0.05
+		t := 0.02
+
+		if profitPercentage < t {
+			ft.notif.Log("ERROR", "Abort. Coin Buy p less than ", t, profitPercentage, item.coin)
+			continue
+		}
+		equity := usd * item.alloc
+		// equity = 1000
+		// fmt.Println(usd)
+		// fmt.Println(equity)
+		s := equity / (equity + equity*((profitPercentage*100)/100.0))
+		buyQty := Round(equity/close, 8)
+		sellQty := Round(buyQty*s, 8)
+		remainingQty := buyQty - sellQty
+		fmt.Println("Buy Qty", buyQty, "@", close, "sell Qty", sellQty,
+			"TP", tp)
+		// fmt.Println("Buy Qty", buyQtyUsd, "@", close, "sell Qty", sellQtyUsd)
+		fmt.Println("remainingQty", remainingQty,
+			"remaining money", remainingQty*(close+close*profitPercentage))
+		ft.BuyCoin(subAcc, item.coin, buyQty, sellQty, tp)
+		time.Sleep(time.Second)
+
+	}
+	/*
+		ATOMBULL/USD
+		MATICBULL/USD
+		ETHBULL/USD
+		BULL/USD
+		ADABULL/USD
+		BNBBULL/USD
+		SOL/USD
+		BTC/USD
+	*/
+
+}
+
+func (ft *FtxTrade) GetAtr(coin string) (atr float64, close float64, err error) {
+	market := coin + "/USD"
+	fmt.Println(market)
+	key := ft.cfg.FTXKey
+	secret := ft.cfg.FTXSecret
+	client := ftx.New(key, secret, "")
+	defer client.Client.CloseIdleConnections()
+
+	var m15 int64
+	m15 = 15 * 60
+	ohclv, err := client.GetHistoricalPriceLatest(market, m15, 200)
+
+	if err != nil {
+		return atr, close, err
+	}
+
+	if !ohclv.Success {
+		fmt.Println(fmt.Sprintf("HERE1 %d ", ohclv.HTTPCode) + ohclv.ErrorMessage)
+		return atr, close, err
+	}
+
+	candles := make([]structs.HistoricalPrice, len(ohclv.Result))
+	for i, candle := range ohclv.Result {
+		candles[i] = candle
+		candles[i].StartTime = candles[i].StartTime.Add(time.Minute * 15)
+	}
+
+	// if len(candles) > 0 { // rm ongoing candle
+	// 	candles = candles[:len(candles)-1]
+	// }
+
+	closes := make([]float64, len(candles))
+	highs := make([]float64, len(candles))
+	lows := make([]float64, len(candles))
+	for i, candle := range candles {
+		closes[i] = candle.Close
+		highs[i] = candle.High
+		lows[i] = candle.Low
+	}
+
+	atrs := talib.Atr(highs, lows, closes, 14)
+
+	if len(atrs) > 0 {
+		atr = atrs[len(atrs)-1]
+		close = closes[len(closes)-1]
+		return atr, close, err
+	}
+
+	return atr, close, errors.New("no atr")
 }

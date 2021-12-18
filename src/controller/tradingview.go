@@ -51,9 +51,7 @@ func (tvc *TvController) PostFlash(ctx *gin.Context) {
 	switch message.Signal {
 	case 1001:
 		go func() {
-			tvc.ftxTrade.BuyCoinBull("ethbull", "ETHBULL/USD")
-			time.Sleep(time.Second)
-			tvc.ftxTrade.BuyCoinBull("bull", "BULL/USD")
+			tvc.ftxTrade.Portfolio("p")
 		}()
 		return
 	case -2002: // TP
@@ -100,10 +98,10 @@ func (tvc *TvController) PostFlash(ctx *gin.Context) {
 			ticker := msg.Ticker
 			t := strings.ToUpper(ticker)
 			if side == "buy" {
-				time.Sleep(time.Second)
-				tvc.ftxTrade.BuyCoinBull("ethbull", "ETHBULL/USD")
-				time.Sleep(time.Second)
-				tvc.ftxTrade.BuyCoinBull("bull", "BULL/USD")
+				// time.Sleep(time.Second)
+				// tvc.ftxTrade.BuyCoinBull("ethbull", "ETHBULL/USD")
+				// time.Sleep(time.Second)
+				// tvc.ftxTrade.BuyCoinBull("bull", "BULL/USD")
 			} else if side == "sell" {
 				if strings.HasPrefix(t, "BTC") || strings.HasPrefix(t, "XBT") {
 					tvc.notif.Log("INFO", "TODO EXIT crypto, ARB BTC,ETH?", message)
