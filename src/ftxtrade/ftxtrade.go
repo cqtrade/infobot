@@ -278,7 +278,7 @@ func (ft *FtxTrade) Portfolio(subAcc string) {
 		// fmt.Println(equity)
 		s := equity / (equity + equity*((profitPercentage*100)/100.0))
 		buyQty := Round(equity/close, 8)
-		sellQty := Round(buyQty*s, 8)
+		sellQty := Round(buyQty*s*1.02, 8)
 		remainingQty := buyQty - sellQty
 		fmt.Println("Buy Qty", buyQty, "@", close, "sell Qty", sellQty,
 			"TP", tp)
