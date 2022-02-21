@@ -199,17 +199,25 @@ func (ft *FtxTrade) BuyCoin(
 
 func (ft *FtxTrade) Portfolio(subAcc string) {
 	var portfolio = []Item{
-		// {
-		// 	coin:  "BULL",
-		// 	alloc: 1,
-		// },
+		{
+			coin:  "BULL",
+			alloc: 0.3,
+		},
+		{
+			coin:  "ETHBULL",
+			alloc: 0.35,
+		},
+		{
+			coin:  "ADABULL",
+			alloc: 0.15,
+		},
 		{
 			coin:  "ATOMBULL",
-			alloc: 0.5,
+			alloc: 0.1,
 		},
 		{
 			coin:  "MATICBULL",
-			alloc: 0.5,
+			alloc: 0.1,
 		},
 	}
 
@@ -237,7 +245,7 @@ func (ft *FtxTrade) Portfolio(subAcc string) {
 		}
 	}
 
-	usd := 0.99 * freeUSD / 2
+	usd := 0.99 * freeUSD / 3
 
 	ft.notif.Log("", "USD", usd)
 	for _, item := range portfolio {
@@ -289,17 +297,6 @@ func (ft *FtxTrade) Portfolio(subAcc string) {
 		time.Sleep(time.Second)
 
 	}
-	/*
-		ATOMBULL/USD
-		MATICBULL/USD
-		ETHBULL/USD
-		BULL/USD
-		ADABULL/USD
-		BNBBULL/USD
-		SOL/USD
-		BTC/USD
-	*/
-
 }
 
 func (ft *FtxTrade) GetAtr(coin string) (atr float64, close float64, err error) {
