@@ -201,23 +201,11 @@ func (ft *FtxTrade) Portfolio(subAcc string) {
 	var portfolio = []Item{
 		{
 			coin:  "BULL",
-			alloc: 0.3,
+			alloc: 0.5,
 		},
 		{
 			coin:  "ETHBULL",
-			alloc: 0.35,
-		},
-		{
-			coin:  "ADABULL",
-			alloc: 0.15,
-		},
-		{
-			coin:  "ATOMBULL",
-			alloc: 0.1,
-		},
-		{
-			coin:  "MATICBULL",
-			alloc: 0.1,
+			alloc: 0.5,
 		},
 	}
 
