@@ -6,6 +6,7 @@ import (
 	"github.com/cqtrade/infobot/src/ftxtrade"
 	"github.com/cqtrade/infobot/src/ftxwebsocket"
 	"github.com/cqtrade/infobot/src/notification"
+	"github.com/cqtrade/infobot/src/oyx"
 	"github.com/cqtrade/infobot/src/server"
 	"github.com/cqtrade/infobot/src/state"
 	"github.com/cqtrade/infobot/src/tasignals"
@@ -20,6 +21,7 @@ var (
 	tvController tvcontroller.TvController = *tvcontroller.New(cfg, notif, ft)
 	tasigs       tasignals.TaSignals       = *tasignals.New(cfg, tvController)
 	webServer    server.Server             = *server.New(cfg, tvController)
+	ox           oyx.Oyx                   = *oyx.New(cfg, notif, appState)
 )
 
 func Run() {
@@ -33,18 +35,9 @@ func Run() {
 	// go notif.Log("INFO", "Boot")
 	// go ft.RunPositionsCheck()
 	// // ft.Portfolio("p")
+	// ft.PortfolioFTX("portfolio")
+	// tasigs.CheckFlashSignals()
 	// webServer.Run()
 
-	// tasigs.CheckFlashSignals()
-	// go notif.RunStateLogMessages()
-	// go notif.RunReadLogMessages()
-	// go appState.RunStateLatestPrices()
-	// go appState.RunPositionsInfo()
-	// go ftws.RunWebSocket()
-	// go ft.RunHealthPing()
-	// go notif.Log("INFO", "Boot")
-	// go ft.RunPositionsCheck()
-	webServer.Run()
-
-	// ft.PortfolioFTX("portfolio")
+	ox.Run()
 }
