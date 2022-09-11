@@ -228,3 +228,35 @@ func (ts *TaSignals) CheckFlashSignals() {
 		ts.flash(indicators)
 	}
 }
+
+func (ts *TaSignals) Indies() {
+	key := ts.cfg.FTXKey
+	secret := ts.cfg.FTXSecret
+	client := ftx.New(key, secret, "")
+	defer client.Client.CloseIdleConnections()
+
+	candles, err := client.GetHistoricalPriceLatest("BTC-PERP", 86400, 5000)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	if !candles.Success {
+		fmt.Println(fmt.Sprintf("HERE1 %d ", candles.HTTPCode) + candles.ErrorMessage)
+	} else {
+		cndles := make([]structs.HistoricalPrice, len(candles.Result))
+		for i, candle := range candles.Result {
+			cndles[i] = candle
+			cndles[i].StartTime = cndles[i].StartTime.Add(time.Minute * 15)
+		}
+
+		closes := make([]float64, len(cndles))
+		for i, candle := range cndles {
+			closes[i] = candle.Close
+		}
+		emas := talib.Ema(closes, 9)
+		for i, ema := range emas {
+			fmt.Println(cndles[i].StartTime, ema)
+		}
+
+	}
+}
