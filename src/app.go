@@ -23,7 +23,7 @@ var (
 )
 
 func Run() {
-	tasigs.Indies()
+	// tasigs.Indies()
 	// go notif.RunStateLogMessages()
 	// go notif.RunReadLogMessages()
 	// go appState.RunStateLatestPrices()
@@ -35,4 +35,16 @@ func Run() {
 	// // ft.Portfolio("p")
 	// webServer.Run()
 
+	// tasigs.CheckFlashSignals()
+	// go notif.RunStateLogMessages()
+	// go notif.RunReadLogMessages()
+	// go appState.RunStateLatestPrices()
+	// go appState.RunPositionsInfo()
+	// go ftws.RunWebSocket()
+	// go ft.RunHealthPing()
+	// go notif.Log("INFO", "Boot")
+	// go ft.RunPositionsCheck()
+	webServer.Run()
+
+	// ft.PortfolioFTX("portfolio")
 }
